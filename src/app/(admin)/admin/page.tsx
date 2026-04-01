@@ -3,7 +3,7 @@ export default function AdminDashboardPage() {
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Team Admin owns this page</p>
+        <p className="text-muted-foreground mt-2">DREX PACEY MEER</p>
       </div>
     </div>
   );
