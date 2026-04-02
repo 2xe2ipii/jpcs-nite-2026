@@ -65,11 +65,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=
+SUPABASE_SECRET_KEY=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is a secret — it must **never** appear in client-side code. It is only used in `src/lib/supabase/server.ts` and API routes.
+`SUPABASE_SECRET_KEY` is a secret — it must **never** appear in client-side code. It is only used in `src/lib/supabase/server.ts` and API routes.
 
 ---
 

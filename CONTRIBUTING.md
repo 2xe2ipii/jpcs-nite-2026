@@ -22,7 +22,7 @@ Changes to these files require all-team agreement:
 - `src/lib/supabase/` — Supabase client initialization
 - `supabase/migrations/` — SQL schema files
 
-If you need a new Realtime event, a new database column, or a schema change, **request it through Drex.**
+If you need a new Realtime event, a new database column, or a schema change, **request it through me Drex.**
 
 ## Naming Conventions
 
