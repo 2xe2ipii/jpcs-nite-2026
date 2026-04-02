@@ -1,6 +1,6 @@
 # JPCS NITE 2026 Event System
 
-A real-time web-based event system for **JPCS NITE 2026**, a live gala event at DLSL Sentrum on **April 21, 2026**. The system manages a real-time table buzzer, live scoreboard, and admin controls for approximately 50 competing tables.
+A real-time web-based event system for **JPCS NITE 2026**, a live gala event at DLSL Sentrum on **April 21, 2026**. The system manages a real-time table buzzer, live scoreboard, and admin controls for approximately n competing tables.
 
 > **Theme:** Nightsky of Golden Dreams — Oscars 2016-inspired
 > Color scheme: midnight navy `#0F1B2D`, gold `#C9A84C`, white text
@@ -45,7 +45,7 @@ The app has four routes, each owned by a separate team:
 
 ```bash
 # 1. Clone the repo
-git clone <repo-url>
+git clone https://github.com/dlsl-jpcs/jpcs-nite-2026.git
 cd jpcs-nite-2026
 
 # 2. Install dependencies
