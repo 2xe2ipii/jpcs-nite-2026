@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Nightsky of Golden Dreams — admin/display palette */
+  --color-night: #0F1B2D;
+  --color-night-soft: #182742;
+  --color-night-line: #243a5e;
+  --color-gold: #C9A84C;
+  --color-gold-soft: #E2C977;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);

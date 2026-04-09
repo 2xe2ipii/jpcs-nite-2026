@@ -93,6 +93,6 @@ pnpm dev
 
 ## When In Doubt
 
-- Check the SRS document (JPCS_NITE_2026_SRS.docx)
+- Check the SRS document (JPCS_NITE_2026_SRS.pdf)
 - Check `src/lib/types/realtime.ts` for the exact event/payload shapes
 - Ask in the group chat before making changes to shared files
