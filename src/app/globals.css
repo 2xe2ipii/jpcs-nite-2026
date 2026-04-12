@@ -63,9 +63,9 @@
   --accent-crimson: #8c1c1c;
   --accent-royal: #2b3c6a;
 
-  --font-heading-family: var(--font-playfair);
-  --font-script-family: var(--font-great-vibes);
-  --font-body: var(--font-montserrat);
+  --font-heading-family: var(--font-cormorant);
+  --font-script-family: var(--font-cinzel-decorative);
+  --font-body: var(--font-raleway);
   --font-mono-stack: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   --background: oklch(1 0 0);
@@ -146,7 +146,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-body), "Montserrat", "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-body), "Raleway", "Helvetica Neue", Arial, sans-serif;
     text-rendering: optimizeLegibility;
     letter-spacing: 0.01em;
   }
@@ -157,7 +157,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading-family), "Playfair Display", Georgia, serif;
+    font-family: var(--font-heading-family), "Cormorant Garamond", Georgia, serif;
     letter-spacing: 0.02em;
     line-height: 1.15;
   }
@@ -173,5 +173,5 @@
 }
 
 @utility font-script {
-  font-family: var(--font-script-family), "Great Vibes", cursive;
+  font-family: var(--font-script-family), "Cinzel Decorative", serif;
 }

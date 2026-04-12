@@ -1,30 +1,30 @@
 import type { Metadata } from "next";
 import {
-  Great_Vibes,
-  Montserrat,
-  Playfair_Display,
+  Cinzel_Decorative,
+  Cormorant_Garamond,
+  Raleway,
 } from "next/font/google";
 import "./globals.css";
 
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
+const raleway = Raleway({
+  variable: "--font-raleway",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["300", "400", "600", "700"],
   style: ["normal", "italic"],
   display: "swap",
 });
 
-const greatVibes = Great_Vibes({
-  variable: "--font-great-vibes",
+const cinzelDecorative = Cinzel_Decorative({
+  variable: "--font-cinzel-decorative",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "700", "900"],
   display: "swap",
 });
 
@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${montserrat.variable} ${playfair.variable} ${greatVibes.variable} h-full antialiased`}
+      className={`${raleway.variable} ${cormorant.variable} ${cinzelDecorative.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

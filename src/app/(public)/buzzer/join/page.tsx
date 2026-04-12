@@ -1,11 +1,27 @@
 "use client";
 
 import { JoinDevTools } from "@/components/buzzer/join-dev-tools";
+import { JoinInvitationCard } from "@/components/buzzer/join-invitation-card";
 import { BUZZER_SESSION_TOKEN_KEY } from "@/lib/hooks/use-buzzer";
 import type { DeviceRegisterResponse } from "@/lib/types/realtime";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+
+function getTableNumberLabel(rawValue: string) {
+  const trimmed = rawValue.trim();
+  if (trimmed.length === 0) return "Missing";
+
+  if (/^\d+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const trailingDigits = trimmed.match(/(\d+)$/)?.[1];
+  if (trailingDigits) {
+    return String(Number.parseInt(trailingDigits, 10));
+  }
+
+  return "Unknown";
+}
 
 function JoinTableContent() {
   const router = useRouter();
@@ -28,12 +44,14 @@ function JoinTableContent() {
   const qrToken = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
   const effectiveTableId = isDevMode && devForceValid ? devTableId : tableId;
   const effectiveQrToken = isDevMode && devForceValid ? devToken : qrToken;
+  const tableNumberLabel = useMemo(
+    () => getTableNumberLabel(effectiveTableId),
+    [effectiveTableId]
+  );
   const canSubmit = effectiveTableId.length > 0 && effectiveQrToken.length > 0;
 
   async function handleConfirmJoin() {
-    if (!canSubmit || isSubmitting) {
-      return;
-    }
+    if (!canSubmit || isSubmitting) return;
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -44,7 +62,6 @@ function JoinTableContent() {
         setIsSubmitting(false);
         return;
       }
-
       const fakeSessionToken = `dev_session_${Date.now()}`;
       window.localStorage.setItem(BUZZER_SESSION_TOKEN_KEY, fakeSessionToken);
       router.replace("/buzzer?dev=1");
@@ -54,9 +71,7 @@ function JoinTableContent() {
     try {
       const response = await fetch("/api/devices/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           table_id: effectiveTableId,
           qr_token: effectiveQrToken,
@@ -83,73 +98,39 @@ function JoinTableContent() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-10">
+    <main className="relative flex min-h-screen items-center justify-center bg-(--color-bg-midnight) px-4 py-10">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-90"
+        className="pointer-events-none absolute inset-0 opacity-80"
         style={{
           background:
-            "radial-gradient(120% 90% at 8% -10%, color-mix(in srgb, var(--color-gold-primary) 22%, transparent 78%), transparent 56%), radial-gradient(100% 80% at 88% 10%, color-mix(in srgb, var(--accent-royal) 58%, transparent 42%), transparent 60%), linear-gradient(160deg, var(--color-bg-midnight), #0f1d35 55%, var(--color-bg-curtain))",
+            "radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-gold-primary) 15%, transparent 85%), transparent 60%), linear-gradient(180deg, transparent 0%, var(--color-bg-curtain) 100%)",
         }}
       />
 
-      <section className="relative w-full max-w-md rounded-2xl border border-(--color-gold-primary)/45 bg-(--color-bg-midnight)/76 p-7 text-(--color-text-main) shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm">
-        <p className="font-script text-3xl text-(--color-gold-light)">Red Carpet Rewind</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-wide">Join Your Table</h1>
-        <p className="mt-3 text-sm text-(--color-text-muted)">
-          Confirm this phone as the official representative buzzer device.
-        </p>
-
-        <div className="mt-6 space-y-3 rounded-xl border border-(--color-gold-primary)/30 bg-black/20 p-4 text-sm">
-          <p>
-            <span className="text-(--color-gold-light)">Table ID:</span>{" "}
-            <span className="break-all">{effectiveTableId || "Missing"}</span>
-          </p>
-          <p>
-            <span className="text-(--color-gold-light)">QR Token:</span>{" "}
-            <span>{effectiveQrToken ? "Detected" : "Missing"}</span>
-          </p>
-        </div>
-
-        {errorMessage ? (
-          <p className="mt-4 rounded-md border border-(--accent-crimson)/60 bg-(--accent-crimson)/12 px-3 py-2 text-sm text-(--color-text-main)">
-            {errorMessage}
-          </p>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleConfirmJoin}
-          disabled={!canSubmit || isSubmitting}
-          className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold tracking-wide text-(--color-bg-midnight) transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{
-            background:
-              "linear-gradient(100deg, var(--color-gold-primary), var(--color-gold-light))",
-          }}
-        >
-          {isSubmitting ? "Registering Device..." : "Confirm and Enter Buzzer"}
-        </button>
-
-        {!canSubmit ? (
-          <p className="mt-3 text-xs text-(--color-text-muted)">
-            Invalid QR link. Ask the marshal for the correct table QR.
-          </p>
-        ) : null}
-      </section>
+      <JoinInvitationCard
+        tableNumberLabel={tableNumberLabel}
+        errorMessage={errorMessage}
+        canSubmit={canSubmit}
+        isSubmitting={isSubmitting}
+        onConfirmJoin={handleConfirmJoin}
+      />
 
       {isDevMode ? (
-        <JoinDevTools
-          devForceValid={devForceValid}
-          setDevForceValid={setDevForceValid}
-          devBypassRegister={devBypassRegister}
-          setDevBypassRegister={setDevBypassRegister}
-          devTableId={devTableId}
-          setDevTableId={setDevTableId}
-          devToken={devToken}
-          setDevToken={setDevToken}
-          devSimulatedError={devSimulatedError}
-          setDevSimulatedError={setDevSimulatedError}
-        />
+        <div className="absolute bottom-4 left-4 right-4 z-50">
+           <JoinDevTools
+            devForceValid={devForceValid}
+            setDevForceValid={setDevForceValid}
+            devBypassRegister={devBypassRegister}
+            setDevBypassRegister={setDevBypassRegister}
+            devTableId={devTableId}
+            setDevTableId={setDevTableId}
+            devToken={devToken}
+            setDevToken={setDevToken}
+            devSimulatedError={devSimulatedError}
+            setDevSimulatedError={setDevSimulatedError}
+          />
+        </div>
       ) : null}
     </main>
   );
@@ -159,8 +140,8 @@ export default function JoinTablePage() {
   return (
     <Suspense
       fallback={
-        <main className="relative flex min-h-screen items-center justify-center px-6 py-10">
-          <p className="text-sm text-(--color-text-muted)">Loading join details...</p>
+        <main className="flex min-h-screen items-center justify-center bg-(--color-bg-midnight)">
+          <p className="text-xs uppercase tracking-widest text-(--color-gold-light)">Validating Invitation...</p>
         </main>
       }
     >
