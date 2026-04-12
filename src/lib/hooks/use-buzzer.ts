@@ -16,6 +16,7 @@ import {
 } from "@/lib/types/realtime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+// LocalStorage key used to persist the backend-issued device session token.
 export const BUZZER_SESSION_TOKEN_KEY = "buzzer_session_token";
 
 interface TableContext {
