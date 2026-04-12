@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono-stack);
+  --font-heading: var(--font-heading-family);
+  --font-script: var(--font-script-family);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,6 +50,24 @@
 }
 
 :root {
+  --color-bg-midnight: #0b1325;
+  --color-bg-curtain: #182848;
+  --color-gold-primary: #d4af37;
+  --color-gold-light: #f3e5ab;
+  --color-text-main: #f8f9fa;
+  --color-text-muted: #a0abc0;
+
+  --accent-white: #ffffff;
+  --accent-charcoal: #2a2a2a;
+  --accent-mustard: #d8a027;
+  --accent-crimson: #8c1c1c;
+  --accent-royal: #2b3c6a;
+
+  --font-heading-family: var(--font-playfair);
+  --font-script-family: var(--font-great-vibes);
+  --font-body: var(--font-montserrat);
+  --font-mono-stack: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -121,10 +140,38 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
   }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body), "Montserrat", "Helvetica Neue", Arial, sans-serif;
+    text-rendering: optimizeLegibility;
+    letter-spacing: 0.01em;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading-family), "Playfair Display", Georgia, serif;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-gold-primary) 40%, transparent 60%);
+    color: var(--color-text-main);
+  }
+
+  :focus-visible {
+    outline-color: var(--ring);
+  }
+}
+
+@utility font-script {
+  font-family: var(--font-script-family), "Great Vibes", cursive;
 }
