@@ -1,15 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import { useRoundState } from "@/lib/hooks/use-round-state";
 import { StateBadge } from "@/components/admin/state-badge";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { useState } from "react";
 
 export default function BuzzerControlPage() {
   const round = useRoundState();
   const [error, setError] = useState<string | null>(null);
 
-  const api = async (url: string, body?: unknown) => {
+  // Score entry — shown inline after marking correct
+  const [scoringPending, setScoringPending] = useState(false);
+  const [scoredTableId, setScoredTableId] = useState<string | null>(null);
+  const [scoredTableName, setScoredTableName] = useState<string | null>(null);
+  const [scoreDelta, setScoreDelta] = useState(10);
+  const [scoreReason, setScoreReason] = useState("");
+  const [scoreError, setScoreError] = useState<string | null>(null);
+  const [scoreSubmitting, setScoreSubmitting] = useState(false);
+
+  // ── API calls ────────────────────────────────────────────────────────────────
+
+  const post = async (url: string, body?: unknown) => {
     setError(null);
     const res = await fetch(url, {
       method: "POST",
@@ -24,200 +35,290 @@ export default function BuzzerControlPage() {
     return res.json();
   };
 
-  const openRound = () => api("/api/rounds/open");
-  const markCorrect = () => api(`/api/rounds/${round.round_id}/correct`);
+  const openRound = () => post("/api/rounds/open");
+
+  const markCorrectAndScore = async () => {
+    const tableId = round.first_buzz_table_id;
+    const tableName = round.first_buzz_table_name;
+    await post(`/api/rounds/${round.round_id}/correct`);
+    setScoredTableId(tableId);
+    setScoredTableName(tableName);
+    setScoringPending(true);
+  };
+
   const markIncorrect = () =>
-    api(`/api/rounds/${round.round_id}/incorrect`, {
+    post(`/api/rounds/${round.round_id}/incorrect`, {
       table_id: round.first_buzz_table_id,
     });
-  const abortRound = () => api(`/api/rounds/${round.round_id}/abort`);
+
+  const abortRound = () => post(`/api/rounds/${round.round_id}/abort`);
+
+  const submitScore = async () => {
+    if (!scoredTableId) return;
+    setScoreError(null);
+    setScoreSubmitting(true);
+    try {
+      const res = await fetch("/api/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table_id: scoredTableId,
+          delta: scoreDelta,
+          reason: scoreReason.trim() || undefined,
+        }),
+      });
+      if (!res.ok)
+        throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+      clearScore();
+    } catch (e) {
+      setScoreError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setScoreSubmitting(false);
+    }
+  };
+
+  const clearScore = () => {
+    setScoringPending(false);
+    setScoredTableId(null);
+    setScoredTableName(null);
+    setScoreDelta(10);
+    setScoreReason("");
+    setScoreError(null);
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   if (round.loading) {
     return (
-      <div className="space-y-6">
-        <Header />
-        <p className="text-sm text-white/50">Loading round state…</p>
+      <div className="space-y-8">
+        <h2 className="text-2xl font-semibold text-white">Buzzer Control</h2>
+        <p className="text-sm text-text-muted">Loading…</p>
       </div>
     );
   }
 
-  const isTerminal =
-    round.status === "resolved" || round.status === "aborted";
+  const isTerminal = round.status === "resolved" || round.status === "aborted";
   const showOpen = !round.round_id || isTerminal;
 
   return (
     <div className="space-y-6">
-      <Header />
+      <h2 className="text-2xl font-semibold text-white">Buzzer Control</h2>
 
+      {/* Error — muted, no color */}
       {error && (
-        <div className="rounded-md border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
-        </div>
+        <p className="text-sm text-white/45">{error}</p>
       )}
 
-      {/* Current state indicator */}
+      {/* Round meta row — persistent once a round exists */}
       {round.round_id && (
-        <div className="flex items-center gap-3">
-          <StateBadge status={round.status} />
-          <span className="text-sm text-white/60">
+        <div className="flex items-center justify-between border-b border-surface-3 pb-5">
+          <span className="text-sm text-text-muted">
             Round {round.round_number}
           </span>
+          <StateBadge status={round.status} />
         </div>
       )}
 
-      {/* === IDLE / TERMINAL — Open New Round === */}
-      {showOpen && (
-        <Panel>
-          <p className="mb-4 text-sm text-white/60">
-            {round.round_id
-              ? `Round ${round.round_number} ${round.status === "resolved" ? "resolved" : "aborted"}.`
-              : "No rounds yet."}
-            {" "}Ready to open a new buzzer round.
-          </p>
-          <ConfirmButton
-            onConfirm={openRound}
-            variant="default"
-            size="lg"
-            className="bg-gold text-night hover:bg-gold-soft"
-          >
-            Open Buzzer Round
-          </ConfirmButton>
-        </Panel>
-      )}
+      {/* ── State panel ── */}
+      <div className="rounded border border-surface-3 bg-surface-1 p-8">
 
-      {/* === BUZZER ACTIVE — Waiting for first buzz === */}
-      {round.status === "buzzer_active" && (
-        <Panel>
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-gold" />
-            </span>
-            <p className="text-lg font-medium text-white">
+        {/* IDLE / TERMINAL ────────────────────────────── */}
+        {showOpen && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-text-muted">
+              {isTerminal
+                ? `Round ${round.round_number} ended.`
+                : "No active round."}
+            </p>
+            <ConfirmButton
+              onConfirm={openRound}
+              confirmLabel="Click again to open"
+              className="bg-gold px-5 text-sm font-medium text-night shadow-none hover:bg-gold-soft"
+            >
+              Open Round
+            </ConfirmButton>
+          </div>
+        )}
+
+        {/* BUZZER ACTIVE ──────────────────────────────── */}
+        {round.status === "buzzer_active" && (
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-text-muted">
+              Listening
+            </p>
+            <p className="mt-3 text-xl font-medium text-white">
               Waiting for first buzz…
             </p>
+            <div className="mt-12 flex justify-end">
+              <ConfirmButton
+                onConfirm={abortRound}
+                variant="ghost"
+                confirmLabel="Click again to abort"
+                className="h-auto bg-transparent px-0 text-sm font-normal text-white/35 shadow-none hover:bg-transparent hover:text-white/60"
+              >
+                Abort
+              </ConfirmButton>
+            </div>
           </div>
-          <p className="mt-2 text-sm text-white/50">
-            Buzzers are live. Tables can press now.
-          </p>
-          <div className="mt-6">
-            <ConfirmButton
-              onConfirm={abortRound}
-              variant="destructive"
-              confirmLabel="Click again to abort round"
-            >
-              Abort Round
-            </ConfirmButton>
-          </div>
-        </Panel>
-      )}
+        )}
 
-      {/* === BUZZ RECEIVED — Judge the answer === */}
-      {round.status === "buzz_received" && (
-        <Panel>
-          <p className="text-sm uppercase tracking-widest text-emerald-400">
-            First Buzz
-          </p>
-          <p className="mt-1 text-3xl font-bold text-white">
-            {round.first_buzz_table_name ?? "Unknown table"}
-          </p>
-
-          {round.eliminated_table_names.length > 0 && (
-            <p className="mt-2 text-sm text-white/50">
-              Previously eliminated:{" "}
-              {round.eliminated_table_names.join(", ")}
+        {/* BUZZ RECEIVED ──────────────────────────────── */}
+        {round.status === "buzz_received" && !scoringPending && (
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-text-muted">
+              First Buzz
             </p>
-          )}
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <ConfirmButton
-              onConfirm={markCorrect}
-              variant="default"
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
-              confirmLabel="Click again — Correct"
-            >
-              Correct
-            </ConfirmButton>
-            <ConfirmButton
-              onConfirm={markIncorrect}
-              variant="default"
-              className="bg-amber-600 text-white hover:bg-amber-700"
-              confirmLabel="Click again — Incorrect"
-            >
-              Incorrect
-            </ConfirmButton>
-            <ConfirmButton
-              onConfirm={abortRound}
-              variant="destructive"
-              confirmLabel="Click again to abort round"
-            >
-              Abort Round
-            </ConfirmButton>
-          </div>
-        </Panel>
-      )}
-
-      {/* === STEAL ACTIVE — Waiting for steal buzz === */}
-      {round.status === "steal_active" && (
-        <Panel>
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-400" />
-            </span>
-            <p className="text-lg font-medium text-white">
-              Steal round — waiting for buzz…
+            <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
+              {round.first_buzz_table_name ?? "—"}
             </p>
+            {round.eliminated_table_names.length > 0 && (
+              <p className="mt-2 text-xs text-text-muted">
+                Eliminated: {round.eliminated_table_names.join(", ")}
+              </p>
+            )}
+            <div className="mt-12 flex items-center gap-2">
+              <ConfirmButton
+                onConfirm={markCorrectAndScore}
+                variant="outline"
+                confirmLabel="Confirm correct"
+                className="border-surface-3 bg-surface-2 px-5 text-sm font-medium text-white shadow-none hover:border-white/20 hover:bg-surface-3 hover:text-white"
+              >
+                Correct
+              </ConfirmButton>
+              <ConfirmButton
+                onConfirm={markIncorrect}
+                variant="outline"
+                confirmLabel="Confirm incorrect"
+                className="border-surface-3 bg-surface-2 px-5 text-sm font-medium text-white shadow-none hover:border-white/20 hover:bg-surface-3 hover:text-white"
+              >
+                Incorrect
+              </ConfirmButton>
+              <span className="flex-1" />
+              <ConfirmButton
+                onConfirm={abortRound}
+                variant="ghost"
+                confirmLabel="Click again to abort"
+                className="h-auto bg-transparent px-0 text-sm font-normal text-white/35 shadow-none hover:bg-transparent hover:text-white/60"
+              >
+                Abort
+              </ConfirmButton>
+            </div>
           </div>
+        )}
 
-          <div className="mt-3">
-            <p className="text-xs uppercase tracking-widest text-white/40">
-              Eliminated tables
+        {/* SCORE ENTRY ────────────────────────────────── */}
+        {scoringPending && (
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-text-muted">
+              Add Score
             </p>
-            <ul className="mt-1 space-y-1">
-              {round.eliminated_table_names.map((name, i) => (
-                <li key={i} className="text-sm text-red-300">
-                  {name}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-3 text-2xl font-semibold text-white">
+              {scoredTableName}
+            </p>
+
+            <div className="mt-8 space-y-5">
+              {/* Points stepper */}
+              <div>
+                <label className="mb-2 block text-[10px] uppercase tracking-widest text-text-muted">
+                  Points
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setScoreDelta((d) => d - 5)}
+                    className="flex h-8 w-8 items-center justify-center rounded border border-surface-3 text-sm text-white/50 transition-colors hover:border-white/20 hover:bg-surface-2 hover:text-white"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    value={scoreDelta}
+                    onChange={(e) => setScoreDelta(Number(e.target.value))}
+                    className="w-20 rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-center font-mono text-lg text-white focus:border-white/30 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setScoreDelta((d) => d + 5)}
+                    className="flex h-8 w-8 items-center justify-center rounded border border-surface-3 text-sm text-white/50 transition-colors hover:border-white/20 hover:bg-surface-2 hover:text-white"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="mb-2 block text-[10px] uppercase tracking-widest text-text-muted">
+                  Reason{" "}
+                  <span className="normal-case text-white/25">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Correct answer"
+                  value={scoreReason}
+                  onChange={(e) => setScoreReason(e.target.value)}
+                  className="w-full max-w-xs rounded border border-surface-3 bg-surface-2 px-3 py-1.5 text-sm text-white placeholder:text-white/20 focus:border-white/30 focus:outline-none"
+                />
+              </div>
+
+              {scoreError && (
+                <p className="text-sm text-white/45">{scoreError}</p>
+              )}
+            </div>
+
+            <div className="mt-12 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={clearScore}
+                className="text-sm text-white/35 transition-colors hover:text-white/60"
+              >
+                Skip
+              </button>
+              <ConfirmButton
+                onConfirm={submitScore}
+                disabled={scoreSubmitting}
+                confirmLabel={`Confirm +${scoreDelta} pts`}
+                className="bg-gold px-5 text-sm font-medium text-night shadow-none hover:bg-gold-soft"
+              >
+                {scoreSubmitting ? "Saving…" : `+${scoreDelta} pts`}
+              </ConfirmButton>
+            </div>
           </div>
+        )}
 
-          <div className="mt-6">
-            <ConfirmButton
-              onConfirm={abortRound}
-              variant="destructive"
-              confirmLabel="Click again to abort round"
-            >
-              Abort Round
-            </ConfirmButton>
+        {/* STEAL ACTIVE ───────────────────────────────── */}
+        {round.status === "steal_active" && (
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-text-muted">
+              Steal Round
+            </p>
+            <p className="mt-3 text-xl font-medium text-white">
+              Waiting for first buzz…
+            </p>
+            {round.eliminated_table_names.length > 0 && (
+              <div className="mt-6">
+                <p className="mb-2 text-[10px] uppercase tracking-widest text-text-muted">
+                  Eliminated
+                </p>
+                <p className="text-sm text-white/55">
+                  {round.eliminated_table_names.join("  ·  ")}
+                </p>
+              </div>
+            )}
+            <div className="mt-12 flex justify-end">
+              <ConfirmButton
+                onConfirm={abortRound}
+                variant="ghost"
+                confirmLabel="Click again to abort"
+                className="h-auto bg-transparent px-0 text-sm font-normal text-white/35 shadow-none hover:bg-transparent hover:text-white/60"
+              >
+                Abort
+              </ConfirmButton>
+            </div>
           </div>
-        </Panel>
-      )}
-    </div>
-  );
-}
+        )}
 
-function Header() {
-  return (
-    <div>
-      <p className="text-xs uppercase tracking-widest text-gold">
-        Round Lifecycle
-      </p>
-      <h2 className="mt-1 text-2xl font-semibold text-white">
-        Buzzer Control
-      </h2>
-      <p className="mt-1 text-sm text-white/60">
-        Open rounds, judge answers, manage steals.
-      </p>
-    </div>
-  );
-}
-
-function Panel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-night-line bg-night-soft p-6">
-      {children}
+      </div>
     </div>
   );
 }

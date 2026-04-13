@@ -59,13 +59,7 @@ export default function TableManagementPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-widest text-gold">
-          Table Setup
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold text-white">Tables</h2>
-        <p className="mt-1 text-sm text-white/60">
-          Create tables, toggle status, and manage connected devices.
-        </p>
+        <h2 className="text-2xl font-semibold text-white">Tables</h2>
       </div>
 
       <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">

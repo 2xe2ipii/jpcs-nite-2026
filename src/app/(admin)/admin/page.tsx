@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRoundState } from "@/lib/hooks/use-round-state";
 import { useTableScores } from "@/lib/hooks/use-table-scores";
 import { StateBadge } from "@/components/admin/state-badge";
@@ -10,24 +9,17 @@ export default function AdminDashboardPage() {
   const { scores, loading: scoresLoading } = useTableScores();
 
   const top3 = scores.slice(0, 3);
-  const activeTables = scores.filter((s) => s.is_active).length;
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-widest text-gold">Overview</p>
-        <h2 className="mt-1 text-2xl font-semibold text-white">
-          Dashboard
-        </h2>
-        <p className="mt-1 text-sm text-white/60">
-          Live snapshot of buzzer state and scoreboard.
-        </p>
+        <h2 className="text-2xl font-semibold text-white">Dashboard</h2>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card title="Current Round">
           {round.loading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="text-sm text-text-muted">Loading…</p>
           ) : round.round_id ? (
             <div className="space-y-2">
               <StateBadge status={round.status} />
@@ -35,21 +27,21 @@ export default function AdminDashboardPage() {
                 Round {round.round_number}
               </p>
               {round.first_buzz_table_name && (
-                <p className="text-sm text-white/70">
-                  First: {round.first_buzz_table_name}
+                <p className="text-sm text-text-muted">
+                  First buzz: {round.first_buzz_table_name}
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-white/50">No rounds yet</p>
+            <p className="text-sm text-text-muted">No rounds yet</p>
           )}
         </Card>
 
         <Card title="Top 3 Tables">
           {scoresLoading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="text-sm text-text-muted">Loading…</p>
           ) : top3.length === 0 ? (
-            <p className="text-sm text-white/50">No scores yet</p>
+            <p className="text-sm text-text-muted">No scores yet</p>
           ) : (
             <ol className="space-y-2">
               {top3.map((t, i) => (
@@ -71,25 +63,6 @@ export default function AdminDashboardPage() {
             </ol>
           )}
         </Card>
-
-        <Card title="Active Tables">
-          <p className="text-3xl font-semibold text-white">{activeTables}</p>
-          <p className="mt-1 text-sm text-white/50">in play</p>
-        </Card>
-
-        <Card title="Quick Actions">
-          <div className="flex flex-col gap-2 text-sm">
-            <Link className="text-gold hover:underline" href="/admin/buzzer-control">
-              → Buzzer Control
-            </Link>
-            <Link className="text-gold hover:underline" href="/admin/scoring">
-              → Scoring
-            </Link>
-            <Link className="text-gold hover:underline" href="/admin/tables">
-              → Tables
-            </Link>
-          </div>
-        </Card>
       </div>
     </div>
   );
@@ -103,8 +76,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-night-line bg-night-soft p-4">
-      <p className="mb-2 text-[10px] uppercase tracking-widest text-white/50">
+    <div className="rounded border border-surface-3 bg-surface-1 p-4">
+      <p className="mb-3 text-[10px] uppercase tracking-widest text-text-muted">
         {title}
       </p>
       {children}

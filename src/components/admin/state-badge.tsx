@@ -11,12 +11,12 @@ const STATUS_LABELS: Record<RoundStatus, string> = {
 };
 
 const STATUS_STYLES: Record<RoundStatus, string> = {
-  idle: "bg-night-soft text-gold border border-night-line",
-  buzzer_active: "bg-gold/20 text-gold border border-gold/40 animate-pulse",
-  buzz_received: "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40",
-  steal_active: "bg-amber-500/20 text-amber-300 border border-amber-400/40 animate-pulse",
-  resolved: "bg-emerald-600/20 text-emerald-200 border border-emerald-500/40",
-  aborted: "bg-red-500/20 text-red-300 border border-red-400/40",
+  idle:          "bg-surface-2 text-text-muted",
+  buzzer_active: "bg-gold/15 text-gold",
+  buzz_received: "bg-emerald-500/15 text-emerald-400",
+  steal_active:  "bg-amber-500/15 text-amber-400",
+  resolved:      "bg-emerald-600/15 text-emerald-300",
+  aborted:       "bg-red-500/15 text-red-400",
 };
 
 export function StateBadge({
@@ -29,7 +29,7 @@ export function StateBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide",
+        "inline-flex items-center rounded px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide",
         STATUS_STYLES[status],
         className,
       )}

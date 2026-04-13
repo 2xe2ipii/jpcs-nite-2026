@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { VariantProps } from "class-variance-authority";
 
@@ -64,11 +65,11 @@ export function ConfirmButton({
   return (
     <Button
       type="button"
-      variant={armed ? "destructive" : variant}
+      variant={variant}
       size={size}
       disabled={disabled || busy}
       onClick={handleClick}
-      className={className}
+      className={cn(armed && "ring-1 ring-white/25", className)}
     >
       {busy ? "Working..." : armed ? confirmLabel : children}
     </Button>
