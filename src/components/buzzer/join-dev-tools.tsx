@@ -9,8 +9,6 @@ interface JoinDevToolsProps {
   setDevBypassRegister: (value: boolean) => void;
   devTableId: string;
   setDevTableId: (value: string) => void;
-  devToken: string;
-  setDevToken: (value: string) => void;
   devSimulatedError: string;
   setDevSimulatedError: (value: string) => void;
 }
@@ -22,8 +20,6 @@ export function JoinDevTools({
   setDevBypassRegister,
   devTableId,
   setDevTableId,
-  devToken,
-  setDevToken,
   devSimulatedError,
   setDevSimulatedError,
 }: JoinDevToolsProps) {
@@ -83,15 +79,6 @@ export function JoinDevTools({
                 type="text"
                 value={devTableId}
                 onChange={(event) => setDevTableId(event.target.value)}
-                className={`${inputClass} border-(--color-gold-primary)/35`}
-              />
-            </label>
-            <label className="mt-2.5 block">
-              <span className="text-xs text-(--color-text-muted)">Mock QR Token</span>
-              <input
-                type="text"
-                value={devToken}
-                onChange={(event) => setDevToken(event.target.value)}
                 className={`${inputClass} border-(--color-gold-primary)/35`}
               />
             </label>

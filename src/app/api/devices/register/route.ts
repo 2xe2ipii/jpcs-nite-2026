@@ -8,13 +8,8 @@ import { NextResponse } from "next/server";
 
 // Temporary rollout toggle until qr_tokens is fully deployed.
 // TODO(qr-hardening): switch to true and then remove fallback path entirely.
-const QR_TOKEN_VALIDATION_STRICT = false;
+// ADJUSTMENT: drop qr_tokens in favor of table_id URLs and delete toggle and fallback path.
 
-interface QrTokenValidationResult {
-  valid: boolean;
-  status: number;
-  error?: string;
-}
 
 function parseBody(value: unknown): DeviceRegisterRequest | null {
   if (typeof value !== "object" || value === null) {
@@ -26,94 +21,19 @@ function parseBody(value: unknown): DeviceRegisterRequest | null {
     return null;
   }
 
-  if (typeof maybeBody.qr_token !== "string") {
-    return null;
-  }
-
   const tableId = maybeBody.table_id.trim();
-  const qrToken = maybeBody.qr_token.trim();
-  if (tableId.length === 0 || qrToken.length === 0) {
+  if (tableId.length === 0) {
     return null;
   }
 
   return {
     table_id: tableId,
-    qr_token: qrToken,
   };
 }
 
 function createSessionToken() {
   // Opaque session token stored on the device for reconnection.
   return randomBytes(32).toString("hex");
-}
-
-async function validateQrToken(
-  supabase: ReturnType<typeof createServiceClient>,
-  tableId: string,
-  qrToken: string
-): Promise<QrTokenValidationResult> {
-  const { data, error } = await supabase
-    .from("qr_tokens")
-    .select("id, table_id, token, status, expires_at")
-    .eq("table_id", tableId)
-    .eq("token", qrToken)
-    .maybeSingle();
-
-  if (error) {
-    const message = (error.message ?? "").toLowerCase();
-    const missingTokenStore =
-      error.code === "PGRST205" ||
-      message.includes("could not find the table") ||
-      message.includes("relation \"qr_tokens\" does not exist");
-
-    // TODO(qr-hardening): Remove this fallback once qr_tokens storage is deployed.
-    if (missingTokenStore) {
-      if (QR_TOKEN_VALIDATION_STRICT) {
-        return {
-          valid: false,
-          status: 503,
-          error: "QR token validation is not configured. Please contact support.",
-        };
-      }
-
-      return { valid: true, status: 200 };
-    }
-
-    return {
-      valid: false,
-      status: 500,
-      error: "Failed to validate QR token",
-    };
-  }
-
-  if (!data) {
-    return {
-      valid: false,
-      status: 403,
-      error: "Invalid QR token",
-    };
-  }
-
-  if (typeof data.status === "string" && data.status !== "unused") {
-    return {
-      valid: false,
-      status: 409,
-      error: "QR token is no longer valid",
-    };
-  }
-
-  if (typeof data.expires_at === "string") {
-    const expiryMs = Date.parse(data.expires_at);
-    if (!Number.isNaN(expiryMs) && expiryMs <= Date.now()) {
-      return {
-        valid: false,
-        status: 410,
-        error: "QR token has expired",
-      };
-    }
-  }
-
-  return { valid: true, status: 200 };
 }
 
 export async function POST(request: Request) {
@@ -158,18 +78,7 @@ export async function POST(request: Request) {
 
   // TODO(qr-hardening): Once qr_tokens is fully rolled out, make strict mode the default
   // and perform atomic consume with session creation in the same transaction.
-  const qrValidation = await validateQrToken(
-    supabase,
-    parsedBody.table_id,
-    parsedBody.qr_token
-  );
-
-  if (!qrValidation.valid) {
-    return NextResponse.json(
-      { error: qrValidation.error ?? "Invalid QR token" },
-      { status: qrValidation.status }
-    );
-  }
+  // ADJUSTMENT: qr token validation is removed. Session creation now relies on table_id and existing device_sessions active check.
 
   // Fast pre-check for UX before insert; DB unique index remains final guard.
   const { data: activeSession, error: activeSessionError } = await supabase

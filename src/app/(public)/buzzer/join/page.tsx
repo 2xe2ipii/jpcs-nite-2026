@@ -27,7 +27,10 @@ function JoinTableContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const isDevMode = useMemo(() => searchParams.get("dev") === "1", [searchParams]);
+  const isDevMode = useMemo(
+    () => process.env.NODE_ENV === "development" || searchParams.get("dev") === "1",
+    [searchParams]
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [devForceValid, setDevForceValid] = useState(true);
@@ -35,20 +38,15 @@ function JoinTableContent() {
   const [devTableId, setDevTableId] = useState(
     searchParams.get("_dev_table")?.trim() ?? "demo-table-01"
   );
-  const [devToken, setDevToken] = useState(
-    searchParams.get("_dev_token")?.trim() ?? "demo-token-01"
-  );
   const [devSimulatedError, setDevSimulatedError] = useState("");
 
   const tableId = useMemo(() => searchParams.get("table")?.trim() ?? "", [searchParams]);
-  const qrToken = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
   const effectiveTableId = isDevMode && devForceValid ? devTableId : tableId;
-  const effectiveQrToken = isDevMode && devForceValid ? devToken : qrToken;
   const tableNumberLabel = useMemo(
     () => getTableNumberLabel(effectiveTableId),
     [effectiveTableId]
   );
-  const canSubmit = effectiveTableId.length > 0 && effectiveQrToken.length > 0;
+  const canSubmit = effectiveTableId.length > 0;
 
   async function handleConfirmJoin() {
     if (!canSubmit || isSubmitting) return;
@@ -74,7 +72,6 @@ function JoinTableContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           table_id: effectiveTableId,
-          qr_token: effectiveQrToken,
         }),
       });
 
@@ -125,8 +122,6 @@ function JoinTableContent() {
             setDevBypassRegister={setDevBypassRegister}
             devTableId={devTableId}
             setDevTableId={setDevTableId}
-            devToken={devToken}
-            setDevToken={setDevToken}
             devSimulatedError={devSimulatedError}
             setDevSimulatedError={setDevSimulatedError}
           />

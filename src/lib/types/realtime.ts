@@ -151,7 +151,7 @@ export interface RoundIncorrectRequest {
 /** Request body for POST /api/devices/register */
 export interface DeviceRegisterRequest {
   table_id: string;
-  qr_token: string;
+  // qr_token: string;
 }
 
 /** Success response from POST /api/devices/register */
