@@ -24,7 +24,7 @@ export async function broadcast(
     body: JSON.stringify({
       messages: [
         {
-          topic: `realtime:${channel}`,
+          topic: channel,
           event,
           payload,
           private: false,
