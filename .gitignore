@@ -55,3 +55,6 @@ next-env.d.ts
 # claude-generated helper folders (local only)
 /docs/
 /superpowers/
+
+# qr
+/qr_codes
