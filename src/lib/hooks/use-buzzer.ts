@@ -166,9 +166,16 @@ export function useBuzzer(): UseBuzzerResult {
 
 		// Buzzer UI state is driven by realtime events from buzzer-room.
 		const supabase = createClient();
+		console.log("Subscribing to buzzer-room channel...");
+		
 		const channel = supabase
-			.channel(CHANNELS.BUZZER_ROOM)
+			.channel(CHANNELS.BUZZER_ROOM, {
+				config: {
+					broadcast: { self: true },
+				},
+			})
 			.on("broadcast", { event: BUZZER_EVENTS.ROUND_OPENED }, ({ payload }) => {
+				console.log("Realtime: ROUND_OPENED", payload);
 				const event = payload as RoundOpenedPayload;
 				setRoundId(event.round_id);
 				setStatus("buzzer_active");
@@ -178,6 +185,7 @@ export function useBuzzer(): UseBuzzerResult {
 				setIsFirstBuzz(false);
 			})
 			.on("broadcast", { event: BUZZER_EVENTS.BUZZ_FIRST }, ({ payload }) => {
+				console.log("Realtime: BUZZ_FIRST", payload);
 				const event = payload as BuzzFirstPayload;
 				setRoundId(event.round_id);
 				setStatus("buzz_received");
@@ -189,6 +197,7 @@ export function useBuzzer(): UseBuzzerResult {
 				});
 			})
 			.on("broadcast", { event: BUZZER_EVENTS.ROUND_STEAL }, ({ payload }) => {
+				console.log("Realtime: ROUND_STEAL", payload);
 				const event = payload as RoundStealPayload;
 				setRoundId(event.round_id);
 				setStatus("steal_active");
@@ -200,6 +209,7 @@ export function useBuzzer(): UseBuzzerResult {
 				);
 			})
 			.on("broadcast", { event: BUZZER_EVENTS.ROUND_RESOLVED }, ({ payload }) => {
+				console.log("Realtime: ROUND_RESOLVED", payload);
 				const event = payload as RoundResolvedPayload;
 				setRoundId(event.round_id);
 				setStatus("idle");
@@ -209,6 +219,7 @@ export function useBuzzer(): UseBuzzerResult {
 				setIsFirstBuzz(false);
 			})
 			.on("broadcast", { event: BUZZER_EVENTS.ROUND_ABORTED }, ({ payload }) => {
+				console.log("Realtime: ROUND_ABORTED", payload);
 				const event = payload as RoundAbortedPayload;
 				setRoundId(event.round_id);
 				setStatus("idle");
@@ -217,10 +228,13 @@ export function useBuzzer(): UseBuzzerResult {
 				setBuzzPosition(null);
 				setIsFirstBuzz(false);
 			})
-			.subscribe();
+
+		channel.subscribe((status) => {
+			console.log(`Buzzer-room subscription status: ${status}`);
+		});
 
 		return () => {
-			// Prevent duplicate listeners when the hook re-subscribes.
+			console.log("Unsubscribing from buzzer-room channel...");
 			void channel.unsubscribe();
 		};
 	}, [isSessionValid, table]);
