@@ -32,7 +32,7 @@ import type { TableRow } from "@/lib/types/realtime";
  */
 
 interface TableWithDevice extends TableRow {
-  device_session?: {
+  active_session?: {
     id: string;
     is_active: boolean;
     connected_at: string;
@@ -103,7 +103,7 @@ export default function TableManagementPage() {
                     </span>
                   </div>
                   <span className="text-xs text-white/40">
-                    {t.device_session?.is_active ? "Device connected" : "No device"}
+                    {t.active_session ? "Device connected" : "No device"}
                   </span>
                 </div>
               ))}

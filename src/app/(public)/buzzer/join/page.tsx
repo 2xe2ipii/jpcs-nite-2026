@@ -5,7 +5,7 @@ import { JoinInvitationCard } from "@/components/buzzer/join-invitation-card";
 import { BUZZER_SESSION_TOKEN_KEY } from "@/lib/hooks/use-buzzer";
 import type { DeviceRegisterResponse } from "@/lib/types/realtime";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 function getTableNumberLabel(rawValue: string) {
   const trimmed = rawValue.trim();
@@ -33,6 +33,7 @@ function JoinTableContent() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fetchedTableName, setFetchedTableName] = useState<string | null>(null);
   const [devForceValid, setDevForceValid] = useState(true);
   const [devBypassRegister, setDevBypassRegister] = useState(true);
   const [devTableId, setDevTableId] = useState(
@@ -42,9 +43,21 @@ function JoinTableContent() {
 
   const tableId = useMemo(() => searchParams.get("table")?.trim() ?? "", [searchParams]);
   const effectiveTableId = isDevMode && devForceValid ? devTableId : tableId;
+
+  useEffect(() => {
+    if (effectiveTableId && effectiveTableId.length > 10) { // Simple UUID-ish check
+      fetch(`/api/tables/${effectiveTableId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.display_name) setFetchedTableName(data.display_name);
+        })
+        .catch(() => {});
+    }
+  }, [effectiveTableId]);
+
   const tableNumberLabel = useMemo(
-    () => getTableNumberLabel(effectiveTableId),
-    [effectiveTableId]
+    () => fetchedTableName || getTableNumberLabel(effectiveTableId),
+    [effectiveTableId, fetchedTableName]
   );
   const canSubmit = effectiveTableId.length > 0;
 

@@ -1,11 +1,22 @@
-import QRCode from "qrcode";
-import fs from "fs";
-import path from "path";
+const { createClient } = require('@supabase/supabase-js');
+const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
 
 // Configuration
-const BASE_URL = "https://your-production-domain.com/buzzer/join";
-const TOTAL_TABLES = 20; // Change to final n count
+// Change this to your actual production domain when ready
+const BASE_URL = process.env.BASE_URL || "https://jpcs-nite-2026.vercel.app/buzzer/join";
 const OUTPUT_DIR = path.join(process.cwd(), "qr_codes");
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SECRET_KEY in .env.local');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Ensure output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -13,17 +24,28 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 }
 
 async function generate() {
-  console.log(`Generating QR codes for ${TOTAL_TABLES} tables...\n`);
+  console.log("Fetching tables from database...");
 
-  for (let i = 1; i <= TOTAL_TABLES; i++) {
-    // Generate UUID or predictable string for table_id
-    // Note: If your DB uses strict UUIDs for table_id, you will need to fetch 
-    // the actual UUIDs from your `tables` DB after you run the bulk create 
-    // endpoint. For now, assuming you can use sequential strings or you will replace this.
-    const tableId = `table-${String(i).padStart(2, "0")}`; 
-    
-    const url = `${BASE_URL}?table=${tableId}`;
-    const filename = path.join(OUTPUT_DIR, `Table_${String(i).padStart(2, "0")}.png`);
+  const { data: tables, error } = await supabase
+    .from('tables')
+    .select('id, display_name, table_number')
+    .order('table_number', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching tables:', error);
+    process.exit(1);
+  }
+
+  if (!tables || tables.length === 0) {
+    console.error('No tables found in database. Run seed-tables.js first.');
+    process.exit(1);
+  }
+
+  console.log(`Generating QR codes for ${tables.length} tables...\n`);
+
+  for (const table of tables) {
+    const url = `${BASE_URL}?table=${table.id}`;
+    const filename = path.join(OUTPUT_DIR, `Table_${String(table.table_number).padStart(2, "0")}.png`);
 
     try {
       await QRCode.toFile(filename, url, {
@@ -31,12 +53,12 @@ async function generate() {
           dark: "#0F1B2D", // Nightsky navy
           light: "#FFFFFF" // White background
         },
-        width: 300,
-        margin: 2
+        width: 1000, // Higher resolution for printing
+        margin: 4
       });
-      console.log(`✅ Generated: Table ${i} -> ${filename}`);
+      console.log(`✅ Generated: ${table.display_name} (ID: ${table.id}) -> ${filename}`);
     } catch (err) {
-      console.error(`❌ Failed to generate Table ${i}:`, err);
+      console.error(`❌ Failed to generate ${table.display_name}:`, err);
     }
   }
   

@@ -123,6 +123,24 @@ export function useBuzzer(): UseBuzzerResult {
 				number: payload.table_number,
 			});
 			setIsSessionValid(true);
+
+			// Fetch current round state to handle late-join sync
+			try {
+				const roundRes = await fetch("/api/rounds/current");
+				if (roundRes.ok) {
+					const roundData = await roundRes.json();
+					if (roundData && roundData.id) {
+						setRoundId(roundData.id);
+						setStatus(roundData.status as BuzzerUiState);
+						if (roundData.eliminated_table_ids) {
+							setIsEliminated(roundData.eliminated_table_ids.includes(payload.table_id));
+						}
+					}
+				}
+			} catch (e) {
+				console.error("Failed to fetch initial round state", e);
+			}
+
 			setIsLoading(false);
 			return true;
 		} catch {

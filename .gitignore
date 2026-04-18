@@ -31,6 +31,7 @@ GEMINI.md
 analysis-*.md
 JPCS_NITE_2026_SRS.pdf
 analysis-feature-buzzer-backend.md
+SRS_FEATURE_STATUS.md
 
 # supabase
 supabase/.temp/
