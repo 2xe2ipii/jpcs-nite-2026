@@ -27,6 +27,9 @@
 # ai agent instructions (local only)
 CLAUDE.md
 AGENTS.md
+GEMINI.md
+analysis-*.md
+JPCS_NITE_2026_SRS.pdf
 
 # supabase
 supabase/.temp/
