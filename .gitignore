@@ -30,6 +30,7 @@ AGENTS.md
 GEMINI.md
 analysis-*.md
 JPCS_NITE_2026_SRS.pdf
+analysis-feature-buzzer-backend.md
 
 # supabase
 supabase/.temp/
