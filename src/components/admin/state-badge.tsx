@@ -3,9 +3,9 @@ import type { RoundStatus } from "@/lib/types/realtime";
 
 const STATUS_LABELS: Record<RoundStatus, string> = {
   idle: "Idle",
-  buzzer_active: "Buzzer Active",
-  buzz_received: "Buzz Received",
-  steal_active: "Steal Active",
+  buzzer_active: "Active",
+  buzz_received: "Received",
+  steal_active: "Steal",
   resolved: "Resolved",
   aborted: "Aborted",
 };
