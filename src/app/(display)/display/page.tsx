@@ -308,10 +308,10 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
             className="font-heading text-gold font-semibold italic leading-tight whitespace-nowrap"
             style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}
           >
-            Who Will Buzz First?
+            WHO WILL BUZZ FIRST?
           </h2>
           <p className="font-heading text-white/60 text-2xl italic mt-4">
-            Tables — get ready!
+            TABLES — GET READY!
           </p>
         </>
       );
