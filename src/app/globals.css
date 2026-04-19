@@ -188,3 +188,33 @@
 @utility font-script {
   font-family: var(--font-script-family), "Cinzel Decorative", serif;
 }
+/* ------------------------------------------------------------------ */
+/* Display module animations                                            */
+/* ------------------------------------------------------------------ */
+
+@keyframes buzz-pulse {
+  0%, 100% {
+    opacity: 1;
+    text-shadow:
+      0 0 20px rgba(201, 168, 76, 0.4),
+      0 0 40px rgba(201, 168, 76, 0.15);
+  }
+  50% {
+    opacity: 0.78;
+    text-shadow:
+      0 0 30px rgba(201, 168, 76, 0.9),
+      0 0 60px rgba(201, 168, 76, 0.5),
+      0 0 100px rgba(201, 168, 76, 0.25);
+  }
+}
+
+@keyframes particle-burst {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.2);
+    opacity: 0;
+  }
+}

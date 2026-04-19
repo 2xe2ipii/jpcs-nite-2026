@@ -9,6 +9,20 @@ import type { TableScoreResponse } from "@/lib/types/realtime";
 // Stars — deterministic positions to avoid hydration mismatches
 // ---------------------------------------------------------------------------
 
+// Gold particles that burst outward on buzz_received
+const BURST_PARTICLES = Array.from({ length: 26 }, (_, i) => {
+  const angle = (i / 26) * 360 + (i % 3) * 7;
+  const dist = 150 + (i % 5) * 30;
+  return {
+    id: i,
+    x: +(Math.cos((angle * Math.PI) / 180) * dist).toFixed(1),
+    y: +(Math.sin((angle * Math.PI) / 180) * dist).toFixed(1),
+    size: i % 4 === 0 ? 6 : i % 2 === 0 ? 4 : 2,
+    delay: i * 18,
+    duration: 900 + (i % 6) * 80,
+  };
+});
+
 const STARS = Array.from({ length: 90 }, (_, i) => ({
   id: i,
   left: `${((i * 137.508 + 23) % 100).toFixed(1)}%`,
@@ -231,10 +245,48 @@ function BuzzerCircle({ round }: { round: DisplayRound }) {
       : "border-gold/25";
 
   return (
-    <div
-      className={`w-[430px] h-[430px] rounded-full border flex flex-col items-center justify-center text-center px-12 transition-colors duration-500 ${borderColor}`}
-    >
-      <BuzzerCircleContent round={round} />
+    // Relative wrapper so particles can burst outside the circle
+    <div className="relative w-[430px] h-[430px]">
+      {/* Gold particle burst — re-keyed per table so it replays on each buzz */}
+      {round.status === "buzz_received" && (
+        <GoldParticleBurst key={round.first_buzz_table_name ?? "buzz"} />
+      )}
+
+      {/* The circle */}
+      <div
+        className={`absolute inset-0 rounded-full border flex flex-col items-center justify-center text-center px-12 transition-colors duration-500 ${borderColor}`}
+      >
+        <BuzzerCircleContent round={round} />
+      </div>
+    </div>
+  );
+}
+
+// Particles that animate outward from the center of the 430×430 container
+function GoldParticleBurst() {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {BURST_PARTICLES.map((p) => (
+        <div
+          key={p.id}
+          className="absolute rounded-full bg-gold"
+          style={
+            {
+              left: 215,
+              top: 215,
+              width: p.size,
+              height: p.size,
+              "--tx": `${p.x}px`,
+              "--ty": `${p.y}px`,
+              animationName: "particle-burst",
+              animationDuration: `${p.duration}ms`,
+              animationTimingFunction: "cubic-bezier(0.2, 0.8, 0.4, 1)",
+              animationDelay: `${p.delay}ms`,
+              animationFillMode: "both",
+            } as React.CSSProperties
+          }
+        />
+      ))}
     </div>
   );
 }
@@ -244,10 +296,13 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
     case "buzzer_active":
       return (
         <>
-          <h2 className="font-heading text-gold font-bold italic leading-tight text-5xl">
+          <h2
+            className="font-script text-gold font-bold leading-tight text-5xl uppercase"
+            style={{ animation: "buzz-pulse 2.4s ease-in-out infinite" }}
+          >
             Who Will Buzz First?
           </h2>
-          <p className="font-heading text-white/65 text-2xl italic mt-4">
+          <p className="font-heading text-white/55 text-xl italic mt-4">
             Tables — get ready!
           </p>
         </>
@@ -262,7 +317,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
           >
             {round.first_buzz_table_name ?? "—"}
           </h2>
-          <p className="font-sans text-white/75 text-sm tracking-[0.3em] uppercase mt-5">
+          <p className="font-sans text-white/80 text-sm tracking-[0.35em] uppercase mt-5">
             Buzzed First!
           </p>
         </>
@@ -287,7 +342,6 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
                 <span
                   key={name}
                   className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-red-500/40 text-red-400/80 font-sans text-sm"
-                  style={{ fontVariant: "small-caps" }}
                 >
                   × {name}
                 </span>
@@ -304,7 +358,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
           <h2 className="font-script text-emerald-400 font-bold text-[2.8rem] leading-tight">
             Round Complete
           </h2>
-          <p className="font-heading text-white/60 text-xl italic mt-3">
+          <p className="font-heading text-white/55 text-xl italic mt-3">
             Back to scoreboard shortly...
           </p>
         </>
