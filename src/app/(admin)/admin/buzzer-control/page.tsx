@@ -305,31 +305,13 @@ export default function BuzzerControlPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase tracking-widest text-text-muted">Points</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setScoreDelta(d => Math.max(0, d - 1))}
-                      disabled={scoreSubmitting}
-                      className="flex h-8 w-8 items-center justify-center rounded border border-surface-3 text-lg leading-none text-white/70 transition hover:bg-surface-3 hover:text-white disabled:opacity-40"
-                    >
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      value={scoreDelta}
-                      onChange={e => setScoreDelta(Number(e.target.value) || 0)}
-                      disabled={scoreSubmitting}
-                      className="h-8 w-14 rounded border border-surface-3 bg-surface-2 text-center font-mono text-sm text-white focus:border-gold/50 focus:outline-none disabled:opacity-40"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setScoreDelta(d => d + 1)}
-                      disabled={scoreSubmitting}
-                      className="flex h-8 w-8 items-center justify-center rounded border border-surface-3 text-lg leading-none text-white/70 transition hover:bg-surface-3 hover:text-white disabled:opacity-40"
-                    >
-                      +
-                    </button>
-                  </div>
+                  <input
+                    type="number"
+                    value={scoreDelta}
+                    onChange={e => setScoreDelta(Number(e.target.value) || 0)}
+                    disabled={scoreSubmitting}
+                    className="h-8 w-16 rounded border border-surface-3 bg-surface-2 text-center font-mono text-sm text-white focus:border-gold/50 focus:outline-none disabled:opacity-40 [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
                 </div>
 
                 <GroupDivider />
@@ -361,7 +343,7 @@ export default function BuzzerControlPage() {
                   disabled={scoreSubmitting}
                   size="sm"
                   variant="outline"
-                  className="border-surface-3 px-4 text-white/60 hover:bg-surface-3 hover:text-white"
+                  className="border-surface-3 bg-transparent px-4 !text-white hover:bg-surface-3 hover:!text-white"
                 >
                   Skip
                 </Button>
@@ -383,12 +365,12 @@ export default function BuzzerControlPage() {
                   <th className="px-6 py-3 font-medium w-40">Winner</th>
                   <th className="px-6 py-3 font-medium w-24">Points</th>
                   <th className="px-6 py-3 font-medium">Reason</th>
-                  <th className="px-6 py-3 font-medium w-24 text-right">Time</th>
+                  <th className="px-6 py-3 font-medium w-32 whitespace-nowrap text-right">Time</th>
                 </tr>
               </thead>
             </table>
           </div>
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-surface-3">
+          <div className="flex-1 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full text-left text-sm">
               <tbody className="divide-y divide-surface-3">
                 {history.map((h) => (
@@ -402,7 +384,7 @@ export default function BuzzerControlPage() {
                       {h.points_awarded ? `+${h.points_awarded}` : "—"}
                     </td>
                     <td className="px-6 py-4 text-text-muted italic truncate max-w-xs">{h.reason || "—"}</td>
-                    <td className="px-6 py-4 text-text-muted text-right w-24">
+                    <td className="px-6 py-4 text-text-muted text-right w-32 whitespace-nowrap">
                       {new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                   </tr>

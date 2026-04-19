@@ -17,7 +17,9 @@ function getStatusText(
   isEliminated: boolean,
   isSending: boolean,
 ) {
-  if (isSending) return "Sending Buzz...";
+  // Optimistic: as soon as the user taps, show success wording — we'll fall
+  // through to the real buzz_received state once the server acks.
+  if (isSending) return "Buzz Registered";
   if (isEliminated) return "Eliminated from Round";
   if (status === "buzzer_active") return "Buzzer is Open";
   if (status === "steal_active") return "Steal Opportunity Active";
@@ -54,11 +56,12 @@ export function BuzzerStage({
   isSending,
   onBuzz,
 }: BuzzerStageProps) {
-  // Optimistic feedback: while the POST is in-flight we visually "press" the button
-  // so the user sees an immediate reaction and doesn't keep tapping.
+  // Optimistic feedback: the moment the user taps, render the button as if the
+  // buzz already landed — locked visual + checkmark. When the server eventually
+  // replies, the real buzz_received state seamlessly takes over.
   const buzzerTheme = getBuzzerTheme(canBuzz, isEliminated, isLocked);
   const buzzerLabel = isSending
-    ? null
+    ? "Sent"
     : isEliminated
       ? "Locked"
       : canBuzz
@@ -81,16 +84,29 @@ export function BuzzerStage({
           onClick={onBuzz}
           disabled={isLocked || isSending}
           aria-busy={isSending}
-          className={`relative flex h-64 w-64 items-center justify-center rounded-full border-[3px] outline-none transition-transform duration-150 ${buzzerTheme} ${
+          className={`relative flex h-64 w-64 items-center justify-center rounded-full border-[3px] outline-none transition-all duration-150 ${buzzerTheme} ${
             isSending ? "scale-95" : ""
           }`}
         >
           <div className="absolute inset-2 rounded-full border border-current opacity-30" />
           {isSending ? (
-            <span
-              aria-label="Sending buzz"
-              className="h-20 w-20 animate-spin rounded-full border-[6px] border-current border-t-transparent opacity-80"
-            />
+            <div className="flex flex-col items-center gap-2">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-14 w-14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M5 12l5 5L20 7" />
+              </svg>
+              <span className="text-2xl font-normal uppercase tracking-[0.2em]">
+                {buzzerLabel}
+              </span>
+            </div>
           ) : (
             <span className="ml-2 text-4xl font-normal uppercase tracking-[0.2em]">
               {buzzerLabel}
