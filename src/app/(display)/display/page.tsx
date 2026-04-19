@@ -285,10 +285,7 @@ function ScoreRow({
 const BUZZER_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active", "resolved"]);
 
 function BuzzerCircle({ round }: { round: DisplayRound }) {
-  const ringColor =
-    round.status === "resolved"
-      ? "border-emerald-500/35"
-      : "border-gold/25";
+  const ringColor = "border-gold/25";
 
   const ringPulse = round.status === "buzzer_active" || round.status === "steal_active";
 
@@ -407,10 +404,10 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
     case "resolved":
       return (
         <>
-          <h2 className="font-script text-emerald-400 font-bold text-[2.8rem] leading-tight">
-            Round Complete
+          <h2 className="font-script text-emerald-400 font-medium leading-tight whitespace-nowrap" style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}>
+            ROUND COMPLETE
           </h2>
-          <p className="font-heading text-white/55 text-xl italic mt-3">
+          <p className="font-heading text-white/55 text-xl italic mt-3 uppercase">
             Back to scoreboard shortly...
           </p>
         </>
