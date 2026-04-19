@@ -8,10 +8,16 @@ interface BuzzerStageProps {
   isFirstBuzz: boolean;
   error: string | null;
   isLocked: boolean;
+  isSending: boolean;
   onBuzz: () => void;
 }
 
-function getStatusText(status: BuzzerStageProps["status"], isEliminated: boolean) {
+function getStatusText(
+  status: BuzzerStageProps["status"],
+  isEliminated: boolean,
+  isSending: boolean,
+) {
+  if (isSending) return "Sending Buzz...";
   if (isEliminated) return "Eliminated from Round";
   if (status === "buzzer_active") return "Buzzer is Open";
   if (status === "steal_active") return "Steal Opportunity Active";
@@ -45,9 +51,21 @@ export function BuzzerStage({
   isFirstBuzz,
   error,
   isLocked,
+  isSending,
   onBuzz,
 }: BuzzerStageProps) {
+  // Optimistic feedback: while the POST is in-flight we visually "press" the button
+  // so the user sees an immediate reaction and doesn't keep tapping.
   const buzzerTheme = getBuzzerTheme(canBuzz, isEliminated, isLocked);
+  const buzzerLabel = isSending
+    ? null
+    : isEliminated
+      ? "Locked"
+      : canBuzz
+        ? status === "steal_active"
+          ? "Steal"
+          : "Buzz"
+        : "Locked";
 
   return (
     <>
@@ -61,13 +79,23 @@ export function BuzzerStage({
         <button
           type="button"
           onClick={onBuzz}
-          disabled={isLocked}
-          className={`relative flex h-64 w-64 items-center justify-center rounded-full border-[3px] outline-none ${buzzerTheme}`}
+          disabled={isLocked || isSending}
+          aria-busy={isSending}
+          className={`relative flex h-64 w-64 items-center justify-center rounded-full border-[3px] outline-none transition-transform duration-150 ${buzzerTheme} ${
+            isSending ? "scale-95" : ""
+          }`}
         >
           <div className="absolute inset-2 rounded-full border border-current opacity-30" />
-          <span className="ml-2 text-4xl font-normal uppercase tracking-[0.2em]">
-            {isEliminated ? "Locked" : canBuzz ? (status === "steal_active" ? "Steal" : "Buzz") : "Locked"}
-          </span>
+          {isSending ? (
+            <span
+              aria-label="Sending buzz"
+              className="h-20 w-20 animate-spin rounded-full border-[6px] border-current border-t-transparent opacity-80"
+            />
+          ) : (
+            <span className="ml-2 text-4xl font-normal uppercase tracking-[0.2em]">
+              {buzzerLabel}
+            </span>
+          )}
         </button>
 
         <div className="mt-12 h-24 text-center">
@@ -76,7 +104,7 @@ export function BuzzerStage({
               canBuzz ? "text-(--color-gold-light)" : "text-(--color-text-muted)"
             }`}
           >
-            {getStatusText(status, isEliminated)}
+            {getStatusText(status, isEliminated, isSending)}
           </p>
 
           {firstBuzzTableName ? (

@@ -7,6 +7,22 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
+function Spinner({ className }: { className?: string } = {}) {
+  return (
+    <span
+      aria-label="Loading"
+      className={cn(
+        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent",
+        className,
+      )}
+    />
+  );
+}
+
+function GroupDivider() {
+  return <div aria-hidden className="h-8 w-px bg-surface-3" />;
+}
+
 type HistoryRound = {
   id: string;
   round_number: number;
@@ -24,6 +40,8 @@ export default function BuzzerControlPage() {
 
   // Confirmation states
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  // Submission state so buttons can show a spinner during the API/realtime roundtrip.
+  const [submittingAction, setSubmittingAction] = useState<string | null>(null);
 
   // Score entry
   const [scoringPending, setScoringPending] = useState(false);
@@ -108,6 +126,7 @@ export default function BuzzerControlPage() {
 
   const handleAction = async (action: string) => {
     setPendingAction(null);
+    setSubmittingAction(action);
     try {
       if (action === "open") {
         await post("/api/rounds/open");
@@ -125,8 +144,10 @@ export default function BuzzerControlPage() {
       } else if (action === "abort") {
         await post(`/api/rounds/${round.round_id}/abort`);
       }
-    } catch (e) {
-      // Error handled by post
+    } catch {
+      // error already surfaced by post()
+    } finally {
+      setSubmittingAction(null);
     }
   };
 
@@ -166,18 +187,24 @@ export default function BuzzerControlPage() {
   // ── Render Helpers ───────────────────────────────────────────────────────────
 
   const renderActionButtons = (action: string, label: string, colorClass = "bg-gold text-night hover:bg-gold-soft") => {
-    if (pendingAction === action) {
+    const isSubmitting = submittingAction === action;
+    const anySubmitting = submittingAction !== null;
+    const confirmColor = action === "abort" ? "bg-red-600 text-white hover:bg-red-700" : colorClass;
+
+    if (pendingAction === action || isSubmitting) {
       return (
         <div className="flex items-center gap-2">
           <Button
             onClick={() => handleAction(action)}
+            disabled={anySubmitting}
             size="sm"
-            className={cn("px-4 font-medium", action === "abort" ? "bg-red-600 text-white hover:bg-red-700" : colorClass)}
+            className={cn("min-w-[96px] px-4 font-medium", confirmColor)}
           >
-            Confirm
+            {isSubmitting ? <Spinner /> : "Confirm"}
           </Button>
           <Button
             onClick={() => setPendingAction(null)}
+            disabled={anySubmitting}
             size="sm"
             className="border-surface-3 bg-surface-3 px-4 font-medium text-white hover:bg-surface-4"
           >
@@ -190,8 +217,9 @@ export default function BuzzerControlPage() {
     return (
       <Button
         onClick={() => setPendingAction(action)}
+        disabled={anySubmitting}
         size="sm"
-        className={cn("px-4 font-medium", action === "abort" ? "border-red-500/50 text-red-500 hover:bg-red-500/10" : colorClass)}
+        className={cn("min-w-[112px] px-4 font-medium", action === "abort" ? "border-red-500/50 text-red-500 hover:bg-red-500/10" : colorClass)}
         variant={action === "abort" ? "outline" : "default"}
       >
         {label}
@@ -209,7 +237,9 @@ export default function BuzzerControlPage() {
   }
 
   const isTerminal = round.status === "resolved" || round.status === "aborted";
-  const showOpen = !round.round_id || isTerminal;
+  // Once scoring is pending, the admin must award/skip before opening the next round —
+  // otherwise the two UIs stack and produce the cluttered row the admins complained about.
+  const showOpen = (!round.round_id || isTerminal) && !scoringPending;
   const openLabel = !round.round_id || (isTerminal && round.round_number === 0) ? "Open Round" : "Open Next Round";
 
   return (
@@ -245,12 +275,15 @@ export default function BuzzerControlPage() {
             </>
           )}
 
-          {/* BUZZ RECEIVED */}
+          {/* BUZZ RECEIVED — Correct / Incorrect grouped, Abort separated by a divider */}
           {round.status === "buzz_received" && !scoringPending && (
             <>
-              <div className="flex gap-2">
-                {renderActionButtons("correct", "Correct", "bg-emerald-600 text-white hover:bg-emerald-700")}
-                {renderActionButtons("incorrect", "Incorrect", "bg-orange-600 text-white hover:bg-orange-700")}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {renderActionButtons("correct", "Correct", "bg-emerald-600 text-white hover:bg-emerald-700")}
+                  {renderActionButtons("incorrect", "Incorrect", "bg-orange-600 text-white hover:bg-orange-700")}
+                </div>
+                <GroupDivider />
                 {renderActionButtons("abort", "Abort")}
               </div>
               <p className="text-lg font-bold text-white uppercase tracking-tight">
@@ -259,28 +292,80 @@ export default function BuzzerControlPage() {
             </>
           )}
 
-          {/* SCORE ENTRY (Compact) */}
+          {/* SCORE ENTRY */}
           {scoringPending && (
-            <div className="flex items-center justify-between w-full gap-4">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setScoreDelta(d => Math.max(0, d - 1))} className="w-6 h-6 flex items-center justify-center rounded border border-surface-3 text-white/50 hover:text-white">-</button>
-                  <input type="number" value={scoreDelta} onChange={e => setScoreDelta(Number(e.target.value))} className="w-12 bg-surface-2 border border-surface-3 text-center text-sm text-white rounded" />
-                  <button onClick={() => setScoreDelta(d => d + 1)} className="w-6 h-6 flex items-center justify-center rounded border border-surface-3 text-white/50 hover:text-white">+</button>
+            <div className="flex items-center justify-between w-full gap-6">
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[10px] uppercase tracking-widest text-text-muted">Awarding</span>
+                  <span className="text-base font-semibold text-white">{scoredTableName}</span>
                 </div>
-                <input 
-                  type="text" 
-                  placeholder="Reason..." 
-                  value={scoreReason} 
-                  onChange={e => setScoreReason(e.target.value)} 
-                  className="w-48 bg-surface-2 border border-surface-3 px-3 py-1 text-sm text-white rounded placeholder:text-white/20 focus:outline-none focus:border-white/30"
+
+                <GroupDivider />
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-widest text-text-muted">Points</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setScoreDelta(d => Math.max(0, d - 1))}
+                      disabled={scoreSubmitting}
+                      className="flex h-8 w-8 items-center justify-center rounded border border-surface-3 text-lg leading-none text-white/70 transition hover:bg-surface-3 hover:text-white disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      value={scoreDelta}
+                      onChange={e => setScoreDelta(Number(e.target.value) || 0)}
+                      disabled={scoreSubmitting}
+                      className="h-8 w-14 rounded border border-surface-3 bg-surface-2 text-center font-mono text-sm text-white focus:border-gold/50 focus:outline-none disabled:opacity-40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setScoreDelta(d => d + 1)}
+                      disabled={scoreSubmitting}
+                      className="flex h-8 w-8 items-center justify-center rounded border border-surface-3 text-lg leading-none text-white/70 transition hover:bg-surface-3 hover:text-white disabled:opacity-40"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <GroupDivider />
+
+                <input
+                  type="text"
+                  placeholder="Reason (optional)"
+                  value={scoreReason}
+                  onChange={e => setScoreReason(e.target.value)}
+                  disabled={scoreSubmitting}
+                  className="h-8 w-56 rounded border border-surface-3 bg-surface-2 px-3 text-sm text-white placeholder:text-white/20 focus:border-gold/50 focus:outline-none disabled:opacity-40"
                 />
-                <Button onClick={submitScore} disabled={scoreSubmitting} size="sm" className="bg-gold text-night px-4 h-8">
-                  {scoreSubmitting ? "..." : "Save"}
-                </Button>
-                <button onClick={clearScore} className="text-xs text-white/40 hover:text-white/60 px-2">Skip</button>
               </div>
-              <p className="text-sm font-semibold text-white">{scoredTableName}</p>
+
+              <div className="flex items-center gap-2">
+                {scoreError && (
+                  <span className="mr-2 text-xs text-red-400">{scoreError}</span>
+                )}
+                <Button
+                  onClick={submitScore}
+                  disabled={scoreSubmitting}
+                  size="sm"
+                  className="min-w-[88px] bg-gold px-5 font-medium text-night hover:bg-gold-soft"
+                >
+                  {scoreSubmitting ? <Spinner /> : "Save"}
+                </Button>
+                <Button
+                  onClick={clearScore}
+                  disabled={scoreSubmitting}
+                  size="sm"
+                  variant="outline"
+                  className="border-surface-3 px-4 text-white/60 hover:bg-surface-3 hover:text-white"
+                >
+                  Skip
+                </Button>
+              </div>
             </div>
           )}
         </div>

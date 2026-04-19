@@ -21,6 +21,7 @@ function BuzzerContent() {
     firstBuzz,
     buzzPosition,
     isFirstBuzz,
+    isSending,
     sendBuzz,
   } = useBuzzer();
 
@@ -97,6 +98,7 @@ function BuzzerContent() {
         isFirstBuzz={effectiveIsFirstBuzz}
         error={effectiveError}
         isLocked={isLocked}
+        isSending={isDevMode ? false : isSending}
         onBuzz={handleBuzz}
       />
 

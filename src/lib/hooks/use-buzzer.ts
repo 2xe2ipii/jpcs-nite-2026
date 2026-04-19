@@ -49,6 +49,9 @@ interface UseBuzzerResult {
 	firstBuzz: FirstBuzzContext | null;
 	buzzPosition: number | null;
 	isFirstBuzz: boolean;
+	// True from the moment the user clicks the buzzer until the server responds —
+	// gives the UI an immediate feedback handle so users don't keep tapping.
+	isSending: boolean;
 	validateSession: () => Promise<boolean>;
 	sendBuzz: () => Promise<BuzzResponse | null>;
 }
@@ -79,6 +82,7 @@ export function useBuzzer(): UseBuzzerResult {
 	const [firstBuzz, setFirstBuzz] = useState<FirstBuzzContext | null>(null);
 	const [buzzPosition, setBuzzPosition] = useState<number | null>(null);
 	const [isFirstBuzz, setIsFirstBuzz] = useState(false);
+	const [isSending, setIsSending] = useState(false);
 
 	const validateSession = useCallback(async () => {
 		// Bootstrap table identity from the persisted table_id (sessionless variant).
@@ -261,6 +265,7 @@ export function useBuzzer(): UseBuzzerResult {
 		}
 
 		setError(null);
+		setIsSending(true);
 
 		const body: BuzzRequest = {
 			table_id: table.id,
@@ -294,6 +299,8 @@ export function useBuzzer(): UseBuzzerResult {
 		} catch {
 			setError("Network error while sending buzz.");
 			return null;
+		} finally {
+			setIsSending(false);
 		}
 	}, [canBuzz, table, roundId]);
 
@@ -309,6 +316,7 @@ export function useBuzzer(): UseBuzzerResult {
 		firstBuzz,
 		buzzPosition,
 		isFirstBuzz,
+		isSending,
 		validateSession,
 		sendBuzz,
 	};
