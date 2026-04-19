@@ -17,59 +17,12 @@ const STARS = Array.from({ length: 90 }, (_, i) => ({
   opacity: +(0.1 + (i % 8) * 0.05).toFixed(2),
 }));
 
-// ---------------------------------------------------------------------------
-// Preview / dev tool
-// ---------------------------------------------------------------------------
-
-type PreviewRound = Pick<
+type DisplayRound = Pick<
   RoundState,
   "status" | "first_buzz_table_name" | "eliminated_table_names"
 >;
 
-const PREVIEW_STEPS: Array<{ label: string; round: PreviewRound }> = [
-  {
-    label: "Scoreboard (IDLE)",
-    round: { status: "idle", first_buzz_table_name: null, eliminated_table_names: [] },
-  },
-  {
-    label: "Buzzer Opened",
-    round: { status: "buzzer_active", first_buzz_table_name: null, eliminated_table_names: [] },
-  },
-  {
-    label: "Buzz Received",
-    round: { status: "buzz_received", first_buzz_table_name: "Table 3", eliminated_table_names: [] },
-  },
-  {
-    label: "Steal Round",
-    round: { status: "steal_active", first_buzz_table_name: null, eliminated_table_names: ["Table 3"] },
-  },
-  {
-    label: "Steal Buzz",
-    round: { status: "buzz_received", first_buzz_table_name: "Table 7", eliminated_table_names: ["Table 3"] },
-  },
-  {
-    label: "Round Resolved",
-    round: { status: "resolved", first_buzz_table_name: null, eliminated_table_names: [] },
-  },
-  {
-    label: "Round Aborted",
-    round: { status: "aborted", first_buzz_table_name: null, eliminated_table_names: [] },
-  },
-];
-
-const MOCK_SCORES: TableScoreResponse[] = [
-  { id: "p1", display_name: "Table 1", table_number: 1, is_active: true, current_score: 340 },
-  { id: "p2", display_name: "Table 2", table_number: 2, is_active: true, current_score: 280 },
-  { id: "p3", display_name: "Table 3", table_number: 3, is_active: true, current_score: 255 },
-  { id: "p4", display_name: "Table 4", table_number: 4, is_active: true, current_score: 190 },
-  { id: "p5", display_name: "Table 5", table_number: 5, is_active: true, current_score: 160 },
-  { id: "p6", display_name: "Table 6", table_number: 6, is_active: true, current_score: 120 },
-  { id: "p7", display_name: "Table 7", table_number: 7, is_active: true, current_score: 85 },
-  { id: "p8", display_name: "Table 8", table_number: 8, is_active: true, current_score: 40 },
-];
-
 const OVERLAY_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active", "resolved"]);
-const LIVE_ACTIVE_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active", "resolved"]);
 
 // ---------------------------------------------------------------------------
 // Page
@@ -78,54 +31,43 @@ const LIVE_ACTIVE_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_a
 export default function DisplayPage() {
   const round = useRoundState();
   const { scores } = useTableScores();
-  const [liveOverlayVisible, setLiveOverlayVisible] = useState(false);
+  const [overlayVisible, setOverlayVisible] = useState(false);
   const hydratedRef = useRef(false);
-  const [previewIdx, setPreviewIdx] = useState(0);
 
-  // Drive live overlay visibility from realtime events
   useEffect(() => {
     if (round.loading) return;
 
     if (!hydratedRef.current) {
       hydratedRef.current = true;
-      // On hydration, show overlay only if actively in progress (not already resolved)
       if (OVERLAY_STATUSES.has(round.status) && round.status !== "resolved") {
-        setLiveOverlayVisible(true);
+        setOverlayVisible(true);
       }
       return;
     }
 
     if (round.status === "idle" || round.status === "aborted") {
-      setLiveOverlayVisible(false);
+      setOverlayVisible(false);
       return;
     }
 
     if (round.status === "resolved") {
-      setLiveOverlayVisible(true);
-      const t = setTimeout(() => setLiveOverlayVisible(false), 4500);
+      setOverlayVisible(true);
+      const t = setTimeout(() => setOverlayVisible(false), 4500);
       return () => clearTimeout(t);
     }
 
-    setLiveOverlayVisible(true);
+    setOverlayVisible(true);
   }, [round.status, round.loading]);
 
   const activeScores = scores.filter((t) => t.is_active);
-  const displayScores = activeScores.length > 0 ? activeScores : MOCK_SCORES;
 
-  // Live round takes over the display when an actual round is in progress
-  const isLiveActive = !round.loading && LIVE_ACTIVE_STATUSES.has(round.status);
+  const effectiveRound: DisplayRound = {
+    status: round.status,
+    first_buzz_table_name: round.first_buzz_table_name,
+    eliminated_table_names: round.eliminated_table_names,
+  };
 
-  const effectiveRound: PreviewRound = isLiveActive
-    ? {
-        status: round.status,
-        first_buzz_table_name: round.first_buzz_table_name,
-        eliminated_table_names: round.eliminated_table_names,
-      }
-    : PREVIEW_STEPS[previewIdx].round;
-
-  const showOverlay = isLiveActive
-    ? liveOverlayVisible
-    : OVERLAY_STATUSES.has(PREVIEW_STEPS[previewIdx].round.status);
+  const showOverlay = overlayVisible;
 
   return (
     <div className="relative h-full w-full bg-night overflow-hidden select-none">
@@ -152,7 +94,7 @@ export default function DisplayPage() {
         }`}
       >
         <ScoreboardHeader />
-        <ScoreList scores={displayScores} />
+        <ScoreList scores={activeScores} />
       </div>
 
       {/* Buzzer overlay */}
@@ -164,13 +106,6 @@ export default function DisplayPage() {
         <BuzzerCircle round={effectiveRound} />
       </div>
 
-      {/* Dev preview nav */}
-      <PreviewNav
-        previewIdx={previewIdx}
-        setPreviewIdx={setPreviewIdx}
-        isLiveActive={isLiveActive}
-        liveStatus={round.status}
-      />
     </div>
   );
 }
@@ -287,7 +222,7 @@ function ScoreRow({
 // Buzzer circle overlay
 // ---------------------------------------------------------------------------
 
-function BuzzerCircle({ round }: { round: PreviewRound }) {
+function BuzzerCircle({ round }: { round: DisplayRound }) {
   const borderColor =
     round.status === "steal_active"
       ? "border-red-500/35"
@@ -304,7 +239,7 @@ function BuzzerCircle({ round }: { round: PreviewRound }) {
   );
 }
 
-function BuzzerCircleContent({ round }: { round: PreviewRound }) {
+function BuzzerCircleContent({ round }: { round: DisplayRound }) {
   switch (round.status) {
     case "buzzer_active":
       return (
@@ -380,50 +315,3 @@ function BuzzerCircleContent({ round }: { round: PreviewRound }) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Preview nav (dev tool)
-// ---------------------------------------------------------------------------
-
-function PreviewNav({
-  previewIdx,
-  setPreviewIdx,
-  isLiveActive,
-  liveStatus,
-}: {
-  previewIdx: number;
-  setPreviewIdx: React.Dispatch<React.SetStateAction<number>>;
-  isLiveActive: boolean;
-  liveStatus: string;
-}) {
-  const label = isLiveActive
-    ? liveStatus.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-    : PREVIEW_STEPS[previewIdx].label;
-
-  const stepStr = isLiveActive
-    ? "LIVE"
-    : `${previewIdx + 1}/${PREVIEW_STEPS.length}`;
-
-  return (
-    <div className="absolute bottom-5 left-0 right-0 z-30 flex justify-center">
-      <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#0d1525]/80 border border-white/10 backdrop-blur-sm">
-        <button
-          onClick={() =>
-            setPreviewIdx((i) => (i - 1 + PREVIEW_STEPS.length) % PREVIEW_STEPS.length)
-          }
-          className="text-white/35 hover:text-white/70 text-sm w-4 text-center transition-colors"
-        >
-          ←
-        </button>
-        <span className="font-sans text-white/45 text-[0.6rem] tracking-[0.2em] uppercase whitespace-nowrap min-w-44 text-center">
-          {label} ({stepStr})
-        </span>
-        <button
-          onClick={() => setPreviewIdx((i) => (i + 1) % PREVIEW_STEPS.length)}
-          className="text-white/35 hover:text-white/70 text-sm w-4 text-center transition-colors"
-        >
-          →
-        </button>
-      </div>
-    </div>
-  );
-}
