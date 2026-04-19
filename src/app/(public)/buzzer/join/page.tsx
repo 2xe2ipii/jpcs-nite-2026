@@ -2,8 +2,7 @@
 
 import { JoinDevTools } from "@/components/buzzer/join-dev-tools";
 import { JoinInvitationCard } from "@/components/buzzer/join-invitation-card";
-import { BUZZER_SESSION_TOKEN_KEY } from "@/lib/hooks/use-buzzer";
-import type { DeviceRegisterResponse } from "@/lib/types/realtime";
+import { BUZZER_TABLE_ID_KEY } from "@/lib/hooks/use-buzzer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
@@ -73,33 +72,37 @@ function JoinTableContent() {
         setIsSubmitting(false);
         return;
       }
-      const fakeSessionToken = `dev_session_${Date.now()}`;
-      window.localStorage.setItem(BUZZER_SESSION_TOKEN_KEY, fakeSessionToken);
+      window.localStorage.setItem(BUZZER_TABLE_ID_KEY, effectiveTableId);
       router.replace("/buzzer?dev=1");
       return;
     }
 
     try {
-      const response = await fetch("/api/devices/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          table_id: effectiveTableId,
-        }),
-      });
-
-      const payload = (await response.json().catch(() => ({}))) as
-        | DeviceRegisterResponse
-        | { error?: string };
-
-      if (!response.ok || !("session_token" in payload)) {
-        const errorPayload = payload as { error?: string };
-        setErrorMessage(errorPayload.error ?? "Unable to register this device.");
+      const response = await fetch(`/api/tables/${effectiveTableId}`);
+      if (!response.ok) {
+        setErrorMessage("Table not found or unavailable.");
         setIsSubmitting(false);
         return;
       }
 
-      window.localStorage.setItem(BUZZER_SESSION_TOKEN_KEY, payload.session_token);
+      const table = (await response.json().catch(() => ({}))) as {
+        id?: string;
+        is_active?: boolean;
+      };
+
+      if (!table.id) {
+        setErrorMessage("Table not found.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (table.is_active === false) {
+        setErrorMessage("Table is inactive.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      window.localStorage.setItem(BUZZER_TABLE_ID_KEY, table.id);
       router.replace("/buzzer");
     } catch {
       setErrorMessage("Network error while joining table.");

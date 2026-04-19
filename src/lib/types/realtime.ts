@@ -105,7 +105,7 @@ export interface ScoreUpdatedPayload {
 /** Request body for POST /api/buzz */
 export interface BuzzRequest {
   table_id: string;
-  session_token: string;
+  session_token?: string;
   round_id: string;
 }
 

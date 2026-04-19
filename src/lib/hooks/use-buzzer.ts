@@ -7,7 +7,6 @@ import {
 	type BuzzFirstPayload,
 	type BuzzRequest,
 	type BuzzResponse,
-	type DeviceValidateResponse,
 	type RoundAbortedPayload,
 	type RoundOpenedPayload,
 	type RoundResolvedPayload,
@@ -16,8 +15,9 @@ import {
 } from "@/lib/types/realtime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-// LocalStorage key used to persist the backend-issued device session token.
-export const BUZZER_SESSION_TOKEN_KEY = "buzzer_session_token";
+// LocalStorage key holding the table_id this device has bound itself to.
+// Sessionless variant: any device with a valid table_id can buzz for that table.
+export const BUZZER_TABLE_ID_KEY = "buzzer_table_id";
 
 interface TableContext {
 	id: string;
@@ -53,17 +53,17 @@ interface UseBuzzerResult {
 	sendBuzz: () => Promise<BuzzResponse | null>;
 }
 
-function getSessionToken() {
+function getStoredTableId() {
 	if (typeof window === "undefined") {
 		return null;
 	}
 
-	const token = window.localStorage.getItem(BUZZER_SESSION_TOKEN_KEY);
-	if (!token) {
+	const value = window.localStorage.getItem(BUZZER_TABLE_ID_KEY);
+	if (!value) {
 		return null;
 	}
 
-	const trimmed = token.trim();
+	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
 }
 
@@ -81,9 +81,9 @@ export function useBuzzer(): UseBuzzerResult {
 	const [isFirstBuzz, setIsFirstBuzz] = useState(false);
 
 	const validateSession = useCallback(async () => {
-		// Bootstrap table identity from the persisted device session token.
-		const sessionToken = getSessionToken();
-		if (!sessionToken) {
+		// Bootstrap table identity from the persisted table_id (sessionless variant).
+		const storedTableId = getStoredTableId();
+		if (!storedTableId) {
 			setIsSessionValid(false);
 			setTable(null);
 			setIsLoading(false);
@@ -94,13 +94,7 @@ export function useBuzzer(): UseBuzzerResult {
 		setError(null);
 
 		try {
-			const response = await fetch("/api/devices/validate", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ session_token: sessionToken }),
-			});
+			const response = await fetch(`/api/tables/${storedTableId}`);
 
 			if (!response.ok) {
 				setIsSessionValid(false);
@@ -109,8 +103,14 @@ export function useBuzzer(): UseBuzzerResult {
 				return false;
 			}
 
-			const payload = (await response.json()) as DeviceValidateResponse;
-			if (!payload.valid) {
+			const payload = (await response.json()) as {
+				id: string;
+				display_name: string;
+				table_number: number;
+				is_active: boolean;
+			};
+
+			if (!payload.id || payload.is_active === false) {
 				setIsSessionValid(false);
 				setTable(null);
 				setIsLoading(false);
@@ -118,8 +118,8 @@ export function useBuzzer(): UseBuzzerResult {
 			}
 
 			setTable({
-				id: payload.table_id,
-				name: payload.table_name,
+				id: payload.id,
+				name: payload.display_name,
 				number: payload.table_number,
 			});
 			setIsSessionValid(true);
@@ -133,7 +133,7 @@ export function useBuzzer(): UseBuzzerResult {
 						setRoundId(roundData.id);
 						setStatus(roundData.status as BuzzerUiState);
 						if (roundData.eliminated_table_ids) {
-							setIsEliminated(roundData.eliminated_table_ids.includes(payload.table_id));
+							setIsEliminated(roundData.eliminated_table_ids.includes(payload.id));
 						}
 					}
 				}
@@ -144,7 +144,7 @@ export function useBuzzer(): UseBuzzerResult {
 			setIsLoading(false);
 			return true;
 		} catch {
-			setError("Unable to validate your device session.");
+			setError("Unable to look up your table.");
 			setIsSessionValid(false);
 			setTable(null);
 			setIsLoading(false);
@@ -260,18 +260,10 @@ export function useBuzzer(): UseBuzzerResult {
 			return null;
 		}
 
-		const sessionToken = getSessionToken();
-		if (!sessionToken) {
-			setError("Session expired. Please rejoin your table.");
-			setIsSessionValid(false);
-			return null;
-		}
-
 		setError(null);
 
 		const body: BuzzRequest = {
 			table_id: table.id,
-			session_token: sessionToken,
 			round_id: roundId,
 		};
 

@@ -19,22 +19,19 @@ function parseBody(value: unknown): BuzzRequest | null {
   const maybeBody = value as Partial<BuzzRequest>;
   if (
     typeof maybeBody.table_id !== "string" ||
-    typeof maybeBody.session_token !== "string" ||
     typeof maybeBody.round_id !== "string"
   ) {
     return null;
   }
 
   const tableId = maybeBody.table_id.trim();
-  const sessionToken = maybeBody.session_token.trim();
   const roundId = maybeBody.round_id.trim();
-  if (tableId.length === 0 || sessionToken.length === 0 || roundId.length === 0) {
+  if (tableId.length === 0 || roundId.length === 0) {
     return null;
   }
 
   return {
     table_id: tableId,
-    session_token: sessionToken,
     round_id: roundId,
   };
 }
@@ -68,21 +65,22 @@ export async function POST(request: Request) {
 
   const supabase = createServiceClient();
 
-  const { data: session, error: sessionError } = await supabase
-    .from("device_sessions")
-    .select("table_id, is_active")
-    .eq("session_token", parsedBody.session_token)
+  // Sessionless variant: verify the table exists and is active; no device-session check.
+  const { data: buzzingTable, error: tableLookupError } = await supabase
+    .from("tables")
+    .select("id, is_active")
+    .eq("id", parsedBody.table_id)
     .maybeSingle();
 
-  if (sessionError) {
+  if (tableLookupError) {
     return NextResponse.json(
-      { error: "Failed to validate device session" },
+      { error: "Failed to look up table" },
       { status: 500 }
     );
   }
 
-  if (!session || !session.is_active || session.table_id !== parsedBody.table_id) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 403 });
+  if (!buzzingTable || !buzzingTable.is_active) {
+    return NextResponse.json({ error: "Invalid table" }, { status: 403 });
   }
 
   const { data: round, error: roundError } = await supabase
