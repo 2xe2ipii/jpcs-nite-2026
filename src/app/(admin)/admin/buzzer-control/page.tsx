@@ -58,49 +58,59 @@ export default function BuzzerControlPage() {
 
   const fetchHistory = async () => {
     const supabase = createClient();
-    
-    // Fetch rounds
+
     const { data: roundsData } = await supabase
       .from("rounds")
       .select(`
-        id, 
-        round_number, 
-        status, 
+        id,
+        round_number,
+        status,
         created_at,
+        first_buzz_table_id,
         first_buzz_table:tables!rounds_first_buzz_table_id_fkey(display_name)
       `)
       .order("round_number", { ascending: false });
-    
+
     if (!roundsData) return;
 
-    // Fetch scores to link them (heuristic based on proximity of table_id and time)
-    // Since there's no direct round_id in score_ledger, we'll try to match by table_id and created_at
+    // Score_ledger has no round_id, so match by (table_id, time window between
+    // this round's start and the next round's start). Earliest matching delta wins.
     const { data: scoresData } = await supabase
       .from("score_ledger")
       .select("table_id, delta, reason, created_at")
-      .order("created_at", { ascending: false })
-      .limit(roundsData.length * 2);
+      .order("created_at", { ascending: true });
 
-    const historyWithScores: HistoryRound[] = roundsData.map(r => {
-      const winnerName = (r.first_buzz_table as any)?.display_name;
-      
-      // Try to find a score ledger entry that matches this table and was created shortly after the round
-      const matchingScore = r.status === 'resolved' && winnerName 
-        ? scoresData?.find(s => 
-            s.table_id === (r as any).first_buzz_table_id || // if we had the ID
-            new Date(s.created_at) >= new Date(r.created_at) && 
-            new Date(s.created_at).getTime() - new Date(r.created_at).getTime() < 300000 // within 5 mins
-          )
-        : null;
+    // roundsData is sorted by round_number DESC. Build a parallel list of each
+    // round's upper time bound = the *next* round's created_at (or +∞ for the latest).
+    const upperBoundByIndex = roundsData.map((_, i) => {
+      const newer = roundsData[i - 1];
+      return newer ? new Date(newer.created_at).getTime() : Number.POSITIVE_INFINITY;
+    });
+
+    const historyWithScores: HistoryRound[] = roundsData.map((r, i) => {
+      const winnerName = (r.first_buzz_table as { display_name?: string } | null)?.display_name ?? null;
+      const winnerId = (r as { first_buzz_table_id?: string | null }).first_buzz_table_id ?? null;
+
+      const lower = new Date(r.created_at).getTime();
+      const upper = upperBoundByIndex[i];
+
+      const matchingScore =
+        r.status === "resolved" && winnerId
+          ? scoresData?.find((s) => {
+              if (s.table_id !== winnerId) return false;
+              const t = new Date(s.created_at).getTime();
+              return t >= lower && t < upper;
+            })
+          : null;
 
       return {
         id: r.id,
         round_number: r.round_number,
         status: r.status,
         created_at: r.created_at,
-        winning_table_name: r.status === 'resolved' ? winnerName : null,
+        winning_table_name: r.status === "resolved" ? winnerName : null,
         points_awarded: matchingScore?.delta,
-        reason: matchingScore?.reason
+        reason: matchingScore?.reason,
       };
     });
 

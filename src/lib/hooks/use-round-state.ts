@@ -48,6 +48,15 @@ export interface UseRoundStateResult extends RoundState {
    * new round from the admin panel — the browser sometimes misses its
    * own broadcast). */
   refresh: () => Promise<void>;
+  /** Optimistically push a freshly-opened round into local state.
+   *
+   * Why: opening a round depends on either (a) the round:opened broadcast
+   * round-tripping back to this same client, or (b) a re-fetch winning the
+   * race against StrictMode double-mount cancellation. Both have failed in
+   * the field — the round lands in the DB but the UI stays on "Open Round".
+   * Calling this from the API response is authoritative and unaffected by
+   * broadcast subscription readiness or hydrate cancellation. */
+  applyRoundOpened: (round: { round_id: string; round_number: number }) => void;
 }
 
 export function useRoundState(): UseRoundStateResult {
