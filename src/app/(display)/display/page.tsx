@@ -120,10 +120,6 @@ export default function DisplayPage() {
         ))}
       </div>
 
-      {/* Top-right watermark */}
-      <p className="absolute top-4 right-5 z-10 font-sans text-white/20 text-[0.6rem] tracking-[0.35em] uppercase pointer-events-none">
-        JPCS NITE 2026
-      </p>
 
       {/* Scoreboard — always present, blurs behind overlay */}
       <div
@@ -177,10 +173,10 @@ export default function DisplayPage() {
 function ScoreboardHeader() {
   return (
     <header className="flex-shrink-0 pt-10 pb-4 text-center">
-      <p className="font-sans text-gold/50 text-[0.7rem] tracking-[0.4em] uppercase">
+      <p className="text-gold/50 text-[0.7rem] tracking-[0.4em] uppercase" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
         JPCS NITE 2026 · NIGHTSKY OF GOLDEN DREAMS
       </p>
-      <h1 className="font-script text-white text-6xl font-bold tracking-wider mt-2">
+      <h1 className="font-script text-white text-6xl font-medium tracking-wider mt-2">
         LEADERBOARD
       </h1>
       <div className="mt-4 mx-auto flex items-center gap-4 w-72">
@@ -390,7 +386,8 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
               {round.eliminated_table_names.map((name) => (
                 <span
                   key={name}
-                  className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-red-500/40 text-red-400/80 font-sans text-sm"
+                  className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-red-500/40 text-red-400/80 text-sm"
+                  style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
                 >
                   × {name.toUpperCase()}
                 </span>
