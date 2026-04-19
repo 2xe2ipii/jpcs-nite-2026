@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRoundState, type RoundState } from "@/lib/hooks/use-round-state";
 import { useTableScores } from "@/lib/hooks/use-table-scores";
 import type { TableScoreResponse } from "@/lib/types/realtime";
@@ -45,10 +46,8 @@ const OVERLAY_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_activ
 const DEV_STATUSES = ["idle", "buzzer_active", "buzz_received", "steal_active", "resolved"] as const;
 
 export default function DisplayPage() {
-  const [isDev, setIsDev] = useState(false);
-  useEffect(() => {
-    setIsDev(new URLSearchParams(window.location.search).get("dev") === "1");
-  }, []);
+  const searchParams = useSearchParams();
+  const isDev = searchParams.get("dev") === "1";
 
   const round = useRoundState();
   const { scores } = useTableScores();
