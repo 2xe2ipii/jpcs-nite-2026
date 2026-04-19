@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRoundState, type RoundState } from "@/lib/hooks/use-round-state";
 import { useTableScores } from "@/lib/hooks/use-table-scores";
 import type { TableScoreResponse } from "@/lib/types/realtime";
@@ -42,11 +43,18 @@ const OVERLAY_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_activ
 // Page
 // ---------------------------------------------------------------------------
 
+const DEV_STATUSES = ["idle", "buzzer_active", "buzz_received", "steal_active", "resolved"] as const;
+
 export default function DisplayPage() {
+  const searchParams = useSearchParams();
+  const isDev = searchParams.get("dev") === "1";
+
   const round = useRoundState();
   const { scores } = useTableScores();
   const [overlayVisible, setOverlayVisible] = useState(false);
   const hydratedRef = useRef(false);
+
+  const [devStatus, setDevStatus] = useState<DisplayRound["status"] | null>(null);
 
   useEffect(() => {
     if (round.loading) return;
@@ -73,13 +81,31 @@ export default function DisplayPage() {
     setOverlayVisible(true);
   }, [round.status, round.loading]);
 
+  // Dev override: manually drive overlay visibility
+  useEffect(() => {
+    if (devStatus === null) return;
+    if (devStatus === "idle") { setOverlayVisible(false); return; }
+    if (devStatus === "resolved") {
+      setOverlayVisible(true);
+      const t = setTimeout(() => setOverlayVisible(false), 4500);
+      return () => clearTimeout(t);
+    }
+    setOverlayVisible(true);
+  }, [devStatus]);
+
   const activeScores = scores.filter((t) => t.is_active);
 
-  const effectiveRound: DisplayRound = {
-    status: round.status,
-    first_buzz_table_name: round.first_buzz_table_name,
-    eliminated_table_names: round.eliminated_table_names,
-  };
+  const effectiveRound: DisplayRound = devStatus
+    ? {
+        status: devStatus,
+        first_buzz_table_name: "Table 7",
+        eliminated_table_names: devStatus === "steal_active" ? ["Table 3", "Table 5"] : [],
+      }
+    : {
+        status: round.status,
+        first_buzz_table_name: round.first_buzz_table_name,
+        eliminated_table_names: round.eliminated_table_names,
+      };
 
   const showOverlay = overlayVisible;
 
@@ -119,6 +145,28 @@ export default function DisplayPage() {
       >
         <BuzzerCircle round={effectiveRound} />
       </div>
+
+      {/* Dev tools — only visible at /display?dev=1 */}
+      {isDev && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+          <p className="font-sans text-white/40 text-[0.6rem] tracking-widest uppercase">Display Dev Tools</p>
+          <div className="flex gap-2">
+            {DEV_STATUSES.map((s) => (
+              <button
+                key={s}
+                onClick={() => setDevStatus(s === devStatus ? null : s)}
+                className={`px-3 py-1.5 rounded text-xs font-sans tracking-wide border transition-colors ${
+                  devStatus === s
+                    ? "bg-gold text-night border-gold"
+                    : "bg-white/5 text-white/60 border-white/15 hover:bg-white/10"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );
