@@ -351,7 +351,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
           >
             WHO WILL BUZZ FIRST?
           </h2>
-          <p className="font-script text-white/60 text-2xl mt-4">
+          <p className="text-white/60 text-xl mt-4" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
             TABLES — GET READY!
           </p>
         </>
@@ -366,8 +366,8 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
           >
             {round.first_buzz_table_name ?? "—"}
           </h2>
-          <p className="font-sans text-white/80 text-sm tracking-[0.35em] uppercase mt-5">
-            Buzzed First!
+          <p className="text-white/60 text-xl mt-4" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
+            BUZZED FIRST!
           </p>
         </>
       );
@@ -380,7 +380,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
           <h2 className="font-script text-red-400 font-medium leading-tight whitespace-nowrap" style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}>
             STEAL ROUND
           </h2>
-          <p className="font-heading text-white/65 text-xl italic mt-3">
+          <p className="text-white/60 text-xl mt-4" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
             {lastEliminated
               ? `${lastEliminated.toUpperCase()} ELIMINATED — WHO'S NEXT?`
               : "WHO'S NEXT?"}
@@ -407,7 +407,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
           <h2 className="font-script text-emerald-400 font-medium leading-tight whitespace-nowrap" style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}>
             ROUND COMPLETE
           </h2>
-          <p className="font-heading text-white/55 text-xl italic mt-3 uppercase">
+          <p className="text-white/55 text-xl mt-4 uppercase" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
             Back to scoreboard shortly...
           </p>
         </>

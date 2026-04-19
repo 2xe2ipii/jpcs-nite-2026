@@ -188,6 +188,10 @@
 @utility font-script {
   font-family: var(--font-script-family), "Cinzel Decorative", serif;
 }
+
+@utility font-cinzel {
+  font-family: var(--font-cinzel), "Cinzel", serif;
+}
 /* ------------------------------------------------------------------ */
 /* Display module animations                                            */
 /* ------------------------------------------------------------------ */

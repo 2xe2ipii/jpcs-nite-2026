@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  Cinzel,
   Cinzel_Decorative,
   Cormorant_Garamond,
   Raleway,
@@ -18,6 +19,13 @@ const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["300", "400", "600", "700"],
   style: ["normal", "italic"],
+  display: "swap",
+});
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -41,7 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${raleway.variable} ${cormorant.variable} ${cinzelDecorative.variable} h-full antialiased`}
+      className={`${raleway.variable} ${cormorant.variable} ${cinzel.variable} ${cinzelDecorative.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
