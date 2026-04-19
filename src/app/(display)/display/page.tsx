@@ -244,10 +244,10 @@ function ScoreRow({
 
       {/* Table name */}
       <span
-        className={`font-heading font-semibold text-xl flex-shrink-0 w-28 ${
+        className={`font-bold text-xl flex-shrink-0 w-28 ${
           isTop3 ? "text-gold" : "text-white/55"
         }`}
-        style={{ fontVariant: "small-caps" }}
+        style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif', fontVariant: "small-caps" }}
       >
         {table.display_name.replace(/(\d+)/, (m) => String(parseInt(m, 10)))}
       </span>
