@@ -103,7 +103,7 @@ Five tables, one view:
 
 | Table | Purpose |
 |---|---|
-| `tables` | The 50 competing tables — persistent identity |
+| `tables` | The n competing tables — persistent identity |
 | `device_sessions` | Active phone registrations (transient, one per table) |
 | `rounds` | Buzzer round lifecycle and outcome |
 | `buzz_signals` | All buzz attempts with server timestamps |
