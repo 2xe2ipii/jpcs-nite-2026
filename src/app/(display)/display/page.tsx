@@ -286,13 +286,11 @@ const BUZZER_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active
 
 function BuzzerCircle({ round }: { round: DisplayRound }) {
   const ringColor =
-    round.status === "steal_active"
-      ? "border-red-500/35"
-      : round.status === "resolved"
+    round.status === "resolved"
       ? "border-emerald-500/35"
       : "border-gold/25";
 
-  const ringPulse = round.status === "buzzer_active";
+  const ringPulse = round.status === "buzzer_active" || round.status === "steal_active";
 
   return (
     // overflow-visible so particles and text can burst outside the 500px box
