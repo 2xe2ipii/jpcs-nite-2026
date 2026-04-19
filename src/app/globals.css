@@ -196,6 +196,11 @@
 /* Display module animations                                            */
 /* ------------------------------------------------------------------ */
 
+@keyframes twinkle {
+  0%, 100% { opacity: var(--star-opacity); transform: scale(1); }
+  50% { opacity: calc(var(--star-opacity) * 0.2); transform: scale(0.6); }
+}
+
 @keyframes ring-pulse {
   0%, 100% {
     transform: scale(1);

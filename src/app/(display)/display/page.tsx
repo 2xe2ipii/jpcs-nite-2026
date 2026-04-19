@@ -23,12 +23,19 @@ const BURST_PARTICLES = Array.from({ length: 28 }, (_, i) => {
   };
 });
 
-const STARS = Array.from({ length: 90 }, (_, i) => ({
+function sr(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+const STARS = Array.from({ length: 120 }, (_, i) => ({
   id: i,
-  left: `${((i * 137.508 + 23) % 100).toFixed(1)}%`,
-  top: `${((i * 97.333 + 11) % 100).toFixed(1)}%`,
-  size: i % 5 === 0 ? 2 : 1,
-  opacity: +(0.1 + (i % 8) * 0.05).toFixed(2),
+  left: `${(sr(i * 3 + 1) * 100).toFixed(2)}%`,
+  top: `${(sr(i * 3 + 2) * 100).toFixed(2)}%`,
+  size: sr(i * 3 + 3) > 0.9 ? 3 : sr(i * 3 + 3) > 0.6 ? 2 : 1,
+  opacity: +(0.1 + sr(i * 3 + 4) * 0.6).toFixed(2),
+  duration: +(2.5 + sr(i * 3 + 5) * 4).toFixed(2),
+  delay: +(sr(i * 3 + 6) * 4).toFixed(2),
 }));
 
 type DisplayRound = Pick<
@@ -110,12 +117,20 @@ export default function DisplayPage() {
   return (
     <div className="relative h-full w-full bg-night overflow-hidden select-none">
       {/* Star field */}
-      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
+      <div className={`absolute inset-0 z-0 pointer-events-none transition-opacity duration-700 ${showOverlay ? "opacity-0" : "opacity-100"}`} aria-hidden>
         {STARS.map((s) => (
           <span
             key={s.id}
             className="absolute rounded-full bg-white"
-            style={{ left: s.left, top: s.top, width: s.size, height: s.size, opacity: s.opacity }}
+            style={{
+              left: s.left,
+              top: s.top,
+              width: s.size,
+              height: s.size,
+              opacity: s.opacity,
+              "--star-opacity": s.opacity,
+              animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
+            } as React.CSSProperties}
           />
         ))}
       </div>
