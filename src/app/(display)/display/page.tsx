@@ -104,7 +104,7 @@ export default function DisplayPage() {
       {/* Scoreboard — always present, blurs behind overlay */}
       <div
         className={`relative z-10 flex flex-col h-full transition-all duration-700 ease-in-out ${
-          showOverlay ? "opacity-15 blur-[1px]" : "opacity-100"
+          showOverlay ? "opacity-[0.06] blur-[3px]" : "opacity-100"
         }`}
       >
         <ScoreboardHeader />
