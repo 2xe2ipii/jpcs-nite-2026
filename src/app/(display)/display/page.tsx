@@ -179,11 +179,7 @@ function ScoreboardHeader() {
       <h1 className="font-script text-white text-6xl font-medium tracking-wider mt-2">
         LEADERBOARD
       </h1>
-      <div className="mt-4 mx-auto flex items-center gap-4 w-72">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent to-gold/25" />
-        <div className="w-1 h-1 rounded-full bg-gold/40" />
-        <div className="flex-1 h-px bg-gradient-to-l from-transparent to-gold/25" />
-      </div>
+      <div className="mt-4 mx-10 h-px" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)' }} />
     </header>
   );
 }
