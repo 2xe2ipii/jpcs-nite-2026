@@ -37,6 +37,7 @@ type DisplayRound = Pick<
 >;
 
 const OVERLAY_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active", "resolved"]);
+const DEV_STATUSES = ["idle", "buzzer_active", "buzz_received", "steal_active", "resolved"] as const;
 
 // ---------------------------------------------------------------------------
 // Page
@@ -47,6 +48,12 @@ export default function DisplayPage() {
   const { scores } = useTableScores();
   const [overlayVisible, setOverlayVisible] = useState(false);
   const hydratedRef = useRef(false);
+  const [isDev, setIsDev] = useState(false);
+  const [devStatus, setDevStatus] = useState<DisplayRound["status"] | null>(null);
+
+  useEffect(() => {
+    setIsDev(new URLSearchParams(window.location.search).get("dev") === "1");
+  }, []);
 
   useEffect(() => {
     if (round.loading) return;
@@ -73,13 +80,30 @@ export default function DisplayPage() {
     setOverlayVisible(true);
   }, [round.status, round.loading]);
 
+  useEffect(() => {
+    if (devStatus === null) return;
+    if (devStatus === "idle") { setOverlayVisible(false); return; }
+    if (devStatus === "resolved") {
+      setOverlayVisible(true);
+      const t = setTimeout(() => setOverlayVisible(false), 4500);
+      return () => clearTimeout(t);
+    }
+    setOverlayVisible(true);
+  }, [devStatus]);
+
   const activeScores = scores.filter((t) => t.is_active);
 
-  const effectiveRound: DisplayRound = {
-    status: round.status,
-    first_buzz_table_name: round.first_buzz_table_name,
-    eliminated_table_names: round.eliminated_table_names,
-  };
+  const effectiveRound: DisplayRound = devStatus
+    ? {
+        status: devStatus,
+        first_buzz_table_name: "Table 7",
+        eliminated_table_names: devStatus === "steal_active" ? ["Table 3", "Table 5"] : [],
+      }
+    : {
+        status: round.status,
+        first_buzz_table_name: round.first_buzz_table_name,
+        eliminated_table_names: round.eliminated_table_names,
+      };
 
   const showOverlay = overlayVisible;
 
@@ -119,6 +143,28 @@ export default function DisplayPage() {
       >
         <BuzzerCircle round={effectiveRound} />
       </div>
+
+      {/* Dev tools — only visible at /display?dev=1 */}
+      {isDev && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+          <p className="font-sans text-white/40 text-[0.6rem] tracking-widest uppercase">Display Dev Tools</p>
+          <div className="flex gap-2">
+            {DEV_STATUSES.map((s) => (
+              <button
+                key={s}
+                onClick={() => setDevStatus(s === devStatus ? null : s)}
+                className={`px-3 py-1.5 rounded text-xs font-sans tracking-wide border transition-colors ${
+                  devStatus === s
+                    ? "bg-gold text-night border-gold"
+                    : "bg-white/5 text-white/60 border-white/15 hover:bg-white/10"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -246,7 +292,7 @@ function BuzzerCircle({ round }: { round: DisplayRound }) {
       ? "border-emerald-500/35"
       : "border-gold/25";
 
-  const ringPulse = BUZZER_STATUSES.has(round.status);
+  const ringPulse = round.status === "buzzer_active";
 
   return (
     // overflow-visible so particles and text can burst outside the 500px box
@@ -258,7 +304,7 @@ function BuzzerCircle({ round }: { round: DisplayRound }) {
 
       {/* Ring — pulses independently; does NOT wrap content so scale won't move text */}
       <div
-        className={`absolute inset-0 rounded-full border transition-colors duration-500 ${ringColor}`}
+        className={`absolute inset-0 rounded-full border transition-all duration-500 ${ringColor}`}
         style={ringPulse ? { animation: "ring-pulse 2.4s ease-in-out infinite" } : undefined}
       />
 
@@ -320,8 +366,8 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
       return (
         <>
           <h2
-            className="font-script text-gold font-bold leading-none"
-            style={{ fontSize: "clamp(2.5rem, 5.5vw, 4.5rem)" }}
+            className="font-script text-gold font-medium leading-none uppercase"
+            style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}
           >
             {round.first_buzz_table_name ?? "—"}
           </h2>
