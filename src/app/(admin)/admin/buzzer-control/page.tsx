@@ -130,6 +130,9 @@ export default function BuzzerControlPage() {
     try {
       if (action === "open") {
         await post("/api/rounds/open");
+        // The browser sometimes misses its own broadcast — re-hydrate from DB
+        // so the UI advances to "Listening" instead of staying on "Open Round".
+        await round.refresh();
       } else if (action === "correct") {
         const tableId = round.first_buzz_table_id;
         const tableName = round.first_buzz_table_name;
