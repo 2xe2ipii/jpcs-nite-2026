@@ -4,6 +4,6 @@ export default function DisplayLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-screen w-screen overflow-hidden">{children}</div>
+    <div className="h-screen w-screen overflow-hidden flex flex-col">{children}</div>
   );
 }
