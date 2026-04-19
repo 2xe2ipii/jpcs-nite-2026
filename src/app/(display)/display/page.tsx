@@ -9,17 +9,17 @@ import type { TableScoreResponse } from "@/lib/types/realtime";
 // Stars — deterministic positions to avoid hydration mismatches
 // ---------------------------------------------------------------------------
 
-// Gold particles that burst outward on buzz_received
-const BURST_PARTICLES = Array.from({ length: 26 }, (_, i) => {
-  const angle = (i / 26) * 360 + (i % 3) * 7;
-  const dist = 150 + (i % 5) * 30;
+// Gold particles that burst outward on buzz_received (centered at 250,250 of 500px container)
+const BURST_PARTICLES = Array.from({ length: 28 }, (_, i) => {
+  const angle = (i / 28) * 360 + (i % 3) * 6;
+  const dist = 190 + (i % 5) * 35; // 190–330px radius — bursts well outside 250px circle
   return {
     id: i,
     x: +(Math.cos((angle * Math.PI) / 180) * dist).toFixed(1),
     y: +(Math.sin((angle * Math.PI) / 180) * dist).toFixed(1),
     size: i % 4 === 0 ? 6 : i % 2 === 0 ? 4 : 2,
-    delay: i * 18,
-    duration: 900 + (i % 6) * 80,
+    delay: i * 16,
+    duration: 900 + (i % 6) * 90,
   };
 });
 
@@ -236,33 +236,41 @@ function ScoreRow({
 // Buzzer circle overlay
 // ---------------------------------------------------------------------------
 
+const BUZZER_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active", "resolved"]);
+
 function BuzzerCircle({ round }: { round: DisplayRound }) {
-  const borderColor =
+  const ringColor =
     round.status === "steal_active"
       ? "border-red-500/35"
       : round.status === "resolved"
       ? "border-emerald-500/35"
       : "border-gold/25";
 
+  const ringPulse = BUZZER_STATUSES.has(round.status);
+
   return (
-    // Relative wrapper so particles can burst outside the circle
-    <div className="relative w-[430px] h-[430px]">
+    // overflow-visible so particles and text can burst outside the 500px box
+    <div className="relative w-[500px] h-[500px] overflow-visible">
       {/* Gold particle burst — re-keyed per table so it replays on each buzz */}
       {round.status === "buzz_received" && (
         <GoldParticleBurst key={round.first_buzz_table_name ?? "buzz"} />
       )}
 
-      {/* The circle */}
+      {/* Ring — pulses independently; does NOT wrap content so scale won't move text */}
       <div
-        className={`absolute inset-0 rounded-full border flex flex-col items-center justify-center text-center px-12 transition-colors duration-500 ${borderColor}`}
-      >
+        className={`absolute inset-0 rounded-full border transition-colors duration-500 ${ringColor}`}
+        style={ringPulse ? { animation: "ring-pulse 2.4s ease-in-out infinite" } : undefined}
+      />
+
+      {/* Content — centered inside the same 500px box, z above ring */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-14 z-10">
         <BuzzerCircleContent round={round} />
       </div>
     </div>
   );
 }
 
-// Particles that animate outward from the center of the 430×430 container
+// Particles that animate outward from the center of the 500×500 container
 function GoldParticleBurst() {
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -272,8 +280,8 @@ function GoldParticleBurst() {
           className="absolute rounded-full bg-gold"
           style={
             {
-              left: 215,
-              top: 215,
+              left: 250,
+              top: 250,
               width: p.size,
               height: p.size,
               "--tx": `${p.x}px`,
@@ -297,12 +305,12 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
       return (
         <>
           <h2
-            className="font-script text-gold font-bold leading-tight text-5xl uppercase"
-            style={{ animation: "buzz-pulse 2.4s ease-in-out infinite" }}
+            className="font-heading text-gold font-semibold italic leading-tight whitespace-nowrap"
+            style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}
           >
             Who Will Buzz First?
           </h2>
-          <p className="font-heading text-white/55 text-xl italic mt-4">
+          <p className="font-heading text-white/60 text-2xl italic mt-4">
             Tables — get ready!
           </p>
         </>
