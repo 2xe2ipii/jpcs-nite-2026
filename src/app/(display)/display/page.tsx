@@ -229,7 +229,7 @@ function ScoreRow({
     <div
       className={`flex items-center gap-4 px-5 py-3.5 rounded-xl border transition-all duration-500 ${
         isTop3
-          ? "bg-white/[0.04] border-white/10"
+          ? "bg-gold/[0.06] border-gold/20"
           : "bg-white/[0.02] border-white/[0.04]"
       }`}
     >
@@ -245,11 +245,11 @@ function ScoreRow({
       {/* Table name */}
       <span
         className={`font-heading font-semibold text-xl flex-shrink-0 w-28 ${
-          isTop3 ? "text-white" : "text-white/55"
+          isTop3 ? "text-gold" : "text-white/55"
         }`}
         style={{ fontVariant: "small-caps" }}
       >
-        {table.display_name}
+        {table.display_name.replace(/(\d+)/, (m) => String(parseInt(m, 10)))}
       </span>
 
       {/* Progress bar */}
@@ -257,7 +257,7 @@ function ScoreRow({
         <div className="h-2.5 rounded-full bg-white/[0.05] overflow-hidden">
           <div
             className="h-full rounded-full bg-gold transition-all duration-700 ease-out"
-            style={{ width: `${barWidth}%` }}
+            style={{ width: `${barWidth}%`, boxShadow: '0 0 8px 2px rgba(201,168,76,0.6), 0 0 20px 4px rgba(201,168,76,0.25)' }}
           />
         </div>
       </div>
