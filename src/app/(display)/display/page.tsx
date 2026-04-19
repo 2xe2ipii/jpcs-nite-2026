@@ -380,13 +380,13 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
         round.eliminated_table_names[round.eliminated_table_names.length - 1];
       return (
         <>
-          <h2 className="font-script text-red-400 font-bold text-[2.8rem] leading-tight">
-            Steal Round
+          <h2 className="font-script text-red-400 font-medium leading-tight whitespace-nowrap" style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}>
+            STEAL ROUND
           </h2>
           <p className="font-heading text-white/65 text-xl italic mt-3">
             {lastEliminated
-              ? `${lastEliminated} eliminated — who's next?`
-              : "Who's next?"}
+              ? `${lastEliminated.toUpperCase()} ELIMINATED — WHO'S NEXT?`
+              : "WHO'S NEXT?"}
           </p>
           {round.eliminated_table_names.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2 mt-4">
@@ -395,7 +395,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
                   key={name}
                   className="flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-red-500/40 text-red-400/80 font-sans text-sm"
                 >
-                  × {name}
+                  × {name.toUpperCase()}
                 </span>
               ))}
             </div>
