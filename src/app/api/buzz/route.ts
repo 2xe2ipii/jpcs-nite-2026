@@ -5,11 +5,8 @@ import {
   type BuzzFirstPayload,
   type BuzzRequest,
   type BuzzResponse,
-  type BuzzPhase,
 } from "@/lib/types/realtime";
 import { NextResponse } from "next/server";
-
-type RoundStatus = "buzzer_active" | "steal_active";
 
 function parseBody(value: unknown): BuzzRequest | null {
   if (typeof value !== "object" || value === null) {
@@ -36,15 +33,20 @@ function parseBody(value: unknown): BuzzRequest | null {
   };
 }
 
-function toPhase(status: RoundStatus, eliminatedCount: number): BuzzPhase {
-  if (status === "buzzer_active") {
-    return "initial";
-  }
-
-  // Steal phase number tracks how many tables were eliminated so far.
-  const stealNumber = Math.max(1, Math.min(eliminatedCount, 10));
-  return `steal_${stealNumber}` as BuzzPhase;
-}
+type SubmitBuzzResult =
+  | { error: string; status: number }
+  | {
+      position: number;
+      is_first: false;
+      phase: string;
+    }
+  | {
+      position: number;
+      is_first: true;
+      phase: string;
+      table_name: string;
+      table_number: number;
+    };
 
 export async function POST(request: Request) {
   let parsedBody: BuzzRequest | null;
@@ -65,150 +67,42 @@ export async function POST(request: Request) {
 
   const supabase = createServiceClient();
 
-  // Sessionless variant: verify the table exists and is active; no device-session check.
-  const { data: buzzingTable, error: tableLookupError } = await supabase
-    .from("tables")
-    .select("id, is_active")
-    .eq("id", parsedBody.table_id)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("submit_buzz", {
+    p_table_id: parsedBody.table_id,
+    p_round_id: parsedBody.round_id,
+  });
 
-  if (tableLookupError) {
+  if (error) {
     return NextResponse.json(
-      { error: "Failed to look up table" },
+      { error: "Failed to process buzz" },
       { status: 500 }
     );
   }
 
-  if (!buzzingTable || !buzzingTable.is_active) {
-    return NextResponse.json({ error: "Invalid table" }, { status: 403 });
-  }
+  const result = data as SubmitBuzzResult;
 
-  const { data: round, error: roundError } = await supabase
-    .from("rounds")
-    .select("id, status, eliminated_table_ids, first_buzz_table_id")
-    .eq("id", parsedBody.round_id)
-    .maybeSingle();
-
-  if (roundError) {
+  if ("error" in result) {
     return NextResponse.json(
-      { error: "Failed to fetch round" },
-      { status: 500 }
-    );
-  }
-
-  if (!round) {
-    return NextResponse.json({ error: "Round not found" }, { status: 404 });
-  }
-
-  if (round.status !== "buzzer_active" && round.status !== "steal_active") {
-    return NextResponse.json(
-      { error: "Round is not in a buzzable state" },
-      { status: 400 }
-    );
-  }
-
-  if (round.eliminated_table_ids.includes(parsedBody.table_id)) {
-    return NextResponse.json(
-      { error: "Table is eliminated for this round" },
-      { status: 409 }
-    );
-  }
-
-  const phase = toPhase(round.status, round.eliminated_table_ids.length);
-
-  const { data: insertedBuzz, error: insertError } = await supabase
-    .from("buzz_signals")
-    .insert({
-      round_id: parsedBody.round_id,
-      table_id: parsedBody.table_id,
-      phase,
-    })
-    .select("id")
-    .single();
-
-  if (insertError || !insertedBuzz) {
-    return NextResponse.json(
-      { error: "Failed to submit buzz" },
-      { status: 500 }
-    );
-  }
-
-  // Resolve rank from server_received_at ordering in the same round phase.
-  const { data: orderedBuzzes, error: orderedBuzzesError } = await supabase
-    .from("buzz_signals")
-    .select("id")
-    .eq("round_id", parsedBody.round_id)
-    .eq("phase", phase)
-    .order("server_received_at", { ascending: true })
-    .order("id", { ascending: true });
-
-  if (orderedBuzzesError || !orderedBuzzes) {
-    return NextResponse.json(
-      { error: "Failed to resolve buzz ordering" },
-      { status: 500 }
-    );
-  }
-
-  const index = orderedBuzzes.findIndex((buzz) => buzz.id === insertedBuzz.id);
-  if (index === -1) {
-    return NextResponse.json(
-      { error: "Failed to resolve buzz position" },
-      { status: 500 }
+      { error: result.error },
+      { status: result.status }
     );
   }
 
   const response: BuzzResponse = {
-    position: index + 1,
-    is_first: index === 0,
+    position: result.position,
+    is_first: result.is_first,
   };
 
-  if (!response.is_first) {
+  if (!result.is_first) {
     return NextResponse.json(response);
-  }
-
-  // Conditional update guards against double-winner races on near-simultaneous buzzes.
-  const { data: updatedRound, error: updateRoundError } = await supabase
-    .from("rounds")
-    .update({
-      first_buzz_table_id: parsedBody.table_id,
-      status: "buzz_received",
-    })
-    .eq("id", parsedBody.round_id)
-    .is("first_buzz_table_id", null)
-    .in("status", ["buzzer_active", "steal_active"])
-    .select("id")
-    .maybeSingle();
-
-  if (updateRoundError) {
-    return NextResponse.json(
-      { error: "Failed to finalize first buzz" },
-      { status: 500 }
-    );
-  }
-
-  if (!updatedRound) {
-    return NextResponse.json({ ...response, is_first: false });
-  }
-
-  const { data: table, error: tableError } = await supabase
-    .from("tables")
-    .select("id, display_name, table_number")
-    .eq("id", parsedBody.table_id)
-    .maybeSingle();
-
-  if (tableError || !table) {
-    return NextResponse.json(
-      { error: "Failed to fetch first buzz table" },
-      { status: 500 }
-    );
   }
 
   const payload: BuzzFirstPayload = {
     round_id: parsedBody.round_id,
-    table_id: table.id,
-    table_name: table.display_name,
-    table_number: table.table_number,
-    phase,
+    table_id: parsedBody.table_id,
+    table_name: result.table_name,
+    table_number: result.table_number,
+    phase: result.phase,
   };
 
   const channel = supabase.channel(CHANNELS.BUZZER_ROOM);
