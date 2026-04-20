@@ -322,7 +322,7 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
       return (
         <>
           <h2
-            className="font-script text-gold font-medium leading-none uppercase"
+            className="font-script text-gold font-medium leading-none uppercase whitespace-nowrap"
             style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}
           >
             {round.first_buzz_table_name ?? "—"}
