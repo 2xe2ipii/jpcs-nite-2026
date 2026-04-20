@@ -60,6 +60,7 @@ export default function DisplayPage() {
     if (!hydratedRef.current) {
       hydratedRef.current = true;
       if (OVERLAY_STATUSES.has(round.status) && round.status !== "resolved") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setOverlayVisible(true);
       }
       return;
@@ -242,8 +243,6 @@ function ScoreRow({
 // ---------------------------------------------------------------------------
 // Buzzer circle overlay
 // ---------------------------------------------------------------------------
-
-const BUZZER_STATUSES = new Set(["buzzer_active", "buzz_received", "steal_active", "resolved"]);
 
 function BuzzerCircle({ round }: { round: DisplayRound }) {
   const ringColor = "border-gold/25";

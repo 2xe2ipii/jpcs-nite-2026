@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRoundState } from "@/lib/hooks/use-round-state";
 import { StateBadge } from "@/components/admin/state-badge";
+import type { RoundStatus } from "@/lib/types/realtime";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,7 @@ function GroupDivider() {
 type HistoryRound = {
   id: string;
   round_number: number;
-  status: string;
+  status: RoundStatus;
   created_at: string;
   winning_table_name?: string | null;
   points_awarded?: number | null;
@@ -390,7 +391,7 @@ export default function BuzzerControlPage() {
                   <tr key={h.id} className={cn("transition-colors hover:bg-white/5", h.id === round.round_id && "bg-white/5")}>
                     <td className="px-6 py-4 text-white font-medium w-24">#{h.round_number}</td>
                     <td className="px-6 py-4 w-32">
-                      <StateBadge status={h.status as any} />
+                      <StateBadge status={h.status} />
                     </td>
                     <td className="px-6 py-4 text-white w-40">{h.winning_table_name || "—"}</td>
                     <td className="px-6 py-4 text-gold font-mono w-24">
