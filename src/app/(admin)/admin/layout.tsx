@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/admin",                label: "Dashboard",       exact: true  },
   { href: "/admin/buzzer-control", label: "Buzzer Control",  exact: false },
   { href: "/admin/scoring",        label: "Scoring",         exact: false },
   { href: "/admin/tables",         label: "Tables",          exact: false },

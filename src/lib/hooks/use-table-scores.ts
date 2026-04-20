@@ -73,10 +73,16 @@ export function useTableScores(): UseTableScoresResult {
         },
       );
 
+    // Fetch initial scores immediately so the UI renders even if Realtime
+    // never connects (auth failure, network issue, etc.).
+    void fetchScores();
+
     channel.subscribe((status) => {
       console.log(`[useTableScores] ${CHANNELS.SCORES} subscription status: ${status}`);
       if (status === "SUBSCRIBED") {
-        fetchScores();
+        // Re-fetch on subscribe to close the race between the initial
+        // fetch above and the moment broadcasts start arriving.
+        void fetchScores();
       }
     });
 

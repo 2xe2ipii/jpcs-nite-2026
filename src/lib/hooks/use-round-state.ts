@@ -190,11 +190,16 @@ export function useRoundState(): UseRoundStateResult {
         },
       );
 
+    // Fetch initial state immediately so the UI renders even if Realtime
+    // never connects (auth failure, network issue, etc.).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void hydrate();
+
     channel.subscribe((status) => {
       console.log(`[useRoundState] ${CHANNELS.BUZZER_ROOM} subscription status: ${status}`);
       if (status === "SUBSCRIBED") {
-        // Only hydrate after we are sure we are listening for updates, 
-        // to avoid missing an update between hydrate and subscribe.
+        // Re-hydrate on subscribe to close the race between the initial
+        // fetch above and the moment broadcasts start arriving.
         void hydrate();
       }
     });

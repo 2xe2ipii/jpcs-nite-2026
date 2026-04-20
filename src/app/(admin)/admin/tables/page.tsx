@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 // Teammate: you'll need this import for the full implementation:
 // import { ConfirmButton } from "@/components/admin/confirm-button";
 import type { TableRow } from "@/lib/types/realtime";
@@ -45,21 +46,50 @@ export default function TableManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/tables")
-      .then((res) => {
+  const loadTables = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    // Retry transient network failures ("Failed to fetch") a couple of times
+    // before surfacing an error — dev-server reloads and cold connections
+    // produce one-shot fetch rejections that resolve on retry.
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetch("/api/tables");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => setTables(data))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+        const data = await res.json();
+        setTables(data);
+        setLoading(false);
+        return;
+      } catch (e) {
+        if (attempt === MAX_ATTEMPTS) {
+          setError(e instanceof Error ? e.message : String(e));
+          setLoading(false);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 300 * attempt));
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    void loadTables();
+  }, [loadTables]);
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-white">Tables</h2>
+        <button
+          type="button"
+          onClick={() => void loadTables()}
+          disabled={loading}
+          aria-label="Retry"
+          title="Retry"
+          className="rounded border border-surface-3 bg-surface-1 p-2 text-white/70 transition-colors hover:bg-surface-2 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
       <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
