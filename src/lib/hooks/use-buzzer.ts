@@ -13,7 +13,7 @@ import {
 	type RoundStealPayload,
 	type RoundStatus,
 } from "@/lib/types/realtime";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // LocalStorage key holding the table_id this device has bound itself to.
 // Sessionless variant: any device with a valid table_id can buzz for that table.
@@ -75,6 +75,7 @@ export function useBuzzer(): UseBuzzerResult {
 	const [isSessionValid, setIsSessionValid] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [table, setTable] = useState<TableContext | null>(null);
+	const tableRef = useRef<TableContext | null>(null);
 
 	const [roundId, setRoundId] = useState<string | null>(null);
 	const [status, setStatus] = useState<BuzzerUiState>("idle");
@@ -84,12 +85,34 @@ export function useBuzzer(): UseBuzzerResult {
 	const [isFirstBuzz, setIsFirstBuzz] = useState(false);
 	const [isSending, setIsSending] = useState(false);
 
+	const syncRoundState = useCallback(async (tableId?: string) => {
+		const tid = tableId ?? tableRef.current?.id;
+		if (!tid) return;
+
+		try {
+			const roundRes = await fetch("/api/rounds/current");
+			if (roundRes.ok) {
+				const roundData = await roundRes.json();
+				if (roundData && roundData.id) {
+					setRoundId(roundData.id);
+					setStatus(roundData.status as BuzzerUiState);
+					if (roundData.eliminated_table_ids) {
+						setIsEliminated(roundData.eliminated_table_ids.includes(tid));
+					}
+				}
+			}
+		} catch (e) {
+			console.error("[useBuzzer] Failed to fetch initial round state", e);
+		}
+	}, []);
+
 	const validateSession = useCallback(async () => {
 		// Bootstrap table identity from the persisted table_id (sessionless variant).
 		const storedTableId = getStoredTableId();
 		if (!storedTableId) {
 			setIsSessionValid(false);
 			setTable(null);
+			tableRef.current = null;
 			setIsLoading(false);
 			return false;
 		}
@@ -103,6 +126,7 @@ export function useBuzzer(): UseBuzzerResult {
 			if (!response.ok) {
 				setIsSessionValid(false);
 				setTable(null);
+				tableRef.current = null;
 				setIsLoading(false);
 				return false;
 			}
@@ -117,33 +141,21 @@ export function useBuzzer(): UseBuzzerResult {
 			if (!payload.id || payload.is_active === false) {
 				setIsSessionValid(false);
 				setTable(null);
+				tableRef.current = null;
 				setIsLoading(false);
 				return false;
 			}
 
-			setTable({
+			const tableContext = {
 				id: payload.id,
 				name: payload.display_name,
 				number: payload.table_number,
-			});
+			};
+			setTable(tableContext);
+			tableRef.current = tableContext;
 			setIsSessionValid(true);
 
-			// Fetch current round state to handle late-join sync
-			try {
-				const roundRes = await fetch("/api/rounds/current");
-				if (roundRes.ok) {
-					const roundData = await roundRes.json();
-					if (roundData && roundData.id) {
-						setRoundId(roundData.id);
-						setStatus(roundData.status as BuzzerUiState);
-						if (roundData.eliminated_table_ids) {
-							setIsEliminated(roundData.eliminated_table_ids.includes(payload.id));
-						}
-					}
-				}
-			} catch (e) {
-				console.error("Failed to fetch initial round state", e);
-			}
+			await syncRoundState(payload.id);
 
 			setIsLoading(false);
 			return true;
@@ -151,10 +163,11 @@ export function useBuzzer(): UseBuzzerResult {
 			setError("Unable to look up your table.");
 			setIsSessionValid(false);
 			setTable(null);
+			tableRef.current = null;
 			setIsLoading(false);
 			return false;
 		}
-	}, []);
+	}, [syncRoundState]);
 
 	useEffect(() => {
 		// Defer first validation to avoid setState-in-effect lint violations.
@@ -170,7 +183,7 @@ export function useBuzzer(): UseBuzzerResult {
 
 		// Buzzer UI state is driven by realtime events from buzzer-room.
 		const supabase = createClient();
-		console.log("Subscribing to buzzer-room channel...");
+		console.log(`[useBuzzer] Subscribing to ${CHANNELS.BUZZER_ROOM}...`);
 		
 		const channel = supabase
 			.channel(CHANNELS.BUZZER_ROOM, {
@@ -209,7 +222,7 @@ export function useBuzzer(): UseBuzzerResult {
 				setBuzzPosition(null);
 				setIsFirstBuzz(false);
 				setIsEliminated(
-					table ? event.eliminated_table_ids.includes(table.id) : false
+					tableRef.current ? event.eliminated_table_ids.includes(tableRef.current.id) : false
 				);
 			})
 			.on("broadcast", { event: BUZZER_EVENTS.ROUND_RESOLVED }, ({ payload }) => {
@@ -236,7 +249,7 @@ export function useBuzzer(): UseBuzzerResult {
 		channel.subscribe((status) => {
 			console.log(`[useBuzzer] ${CHANNELS.BUZZER_ROOM} subscription status: ${status}`);
 			if (status === "SUBSCRIBED") {
-				void validateSession();
+				void syncRoundState();
 			}
 		});
 
@@ -244,7 +257,7 @@ export function useBuzzer(): UseBuzzerResult {
 			console.log(`[useBuzzer] Unsubscribing from ${CHANNELS.BUZZER_ROOM}...`);
 			void supabase.removeChannel(channel);
 		};
-	}, [isSessionValid, table, validateSession]);
+	}, [isSessionValid, syncRoundState]);
 
 	const canBuzz = useMemo(() => {
 		if (!isSessionValid || !table || !roundId) {
