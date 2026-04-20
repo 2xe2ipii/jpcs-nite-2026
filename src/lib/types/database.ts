@@ -249,7 +249,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      submit_buzz: {
+        Args: { p_round_id: string; p_table_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       buzz_phase:
