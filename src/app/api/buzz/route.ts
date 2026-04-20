@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { broadcast } from "@/lib/supabase/broadcast";
 import {
   BUZZER_EVENTS,
   CHANNELS,
@@ -104,19 +105,7 @@ export async function POST(request: Request) {
       phase: result.phase,
     };
 
-    const channel = supabase.channel(CHANNELS.BUZZER_ROOM);
-    const broadcastResult = await channel.send({
-      type: "broadcast",
-      event: BUZZER_EVENTS.BUZZ_FIRST,
-      payload,
-    });
-
-    if (broadcastResult !== "ok") {
-      return NextResponse.json(
-        { error: "Buzz received, but broadcast failed" },
-        { status: 500 }
-      );
-    }
+    await broadcast(CHANNELS.BUZZER_ROOM, BUZZER_EVENTS.BUZZ_FIRST, payload);
   }
 
   return NextResponse.json(response);

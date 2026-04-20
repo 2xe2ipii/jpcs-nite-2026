@@ -44,15 +44,18 @@ export function useTableScores(): UseTableScoresResult {
   };
 
   useEffect(() => {
-    fetchScores();
-
     const supabase = createClient();
     const channel = supabase
-      .channel(CHANNELS.SCORES)
+      .channel(CHANNELS.SCORES, {
+        config: {
+          broadcast: { self: true },
+        },
+      })
       .on(
         "broadcast",
         { event: SCORE_EVENTS.SCORE_UPDATED },
         ({ payload }: { payload: ScoreUpdatedPayload }) => {
+          console.log("[useTableScores] Realtime: SCORE_UPDATED", payload);
           setScores((prev) => {
             const next = prev.map((t) =>
               t.id === payload.table_id
@@ -68,11 +71,17 @@ export function useTableScores(): UseTableScoresResult {
             return next;
           });
         },
-      )
-      .subscribe();
+      );
+
+    channel.subscribe((status) => {
+      console.log(`[useTableScores] ${CHANNELS.SCORES} subscription status: ${status}`);
+      if (status === "SUBSCRIBED") {
+        fetchScores();
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, []);
 

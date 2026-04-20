@@ -109,17 +109,20 @@ export function useRoundState(): UseRoundStateResult {
     cancelledRef.current = false;
     const supabase = createClient();
 
-    // Defer to a microtask so React doesn't see a synchronous setState
-    // inside the effect body (lint: react-hooks/set-state-in-effect).
-    Promise.resolve().then(hydrate);
+    console.log(`[useRoundState] Subscribing to ${CHANNELS.BUZZER_ROOM}...`);
 
     // Subscribe to live updates from the buzzer-room channel.
     const channel = supabase
-      .channel(CHANNELS.BUZZER_ROOM)
+      .channel(CHANNELS.BUZZER_ROOM, {
+        config: {
+          broadcast: { self: true },
+        },
+      })
       .on(
         "broadcast",
         { event: BUZZER_EVENTS.ROUND_OPENED },
         ({ payload }: { payload: RoundOpenedPayload }) => {
+          console.log("[useRoundState] Realtime: ROUND_OPENED", payload);
           setState({
             loading: false,
             round_id: payload.round_id,
@@ -136,6 +139,7 @@ export function useRoundState(): UseRoundStateResult {
         "broadcast",
         { event: BUZZER_EVENTS.BUZZ_FIRST },
         ({ payload }: { payload: BuzzFirstPayload }) => {
+          console.log("[useRoundState] Realtime: BUZZ_FIRST", payload);
           setState((prev) => ({
             ...prev,
             status: "buzz_received",
@@ -148,6 +152,7 @@ export function useRoundState(): UseRoundStateResult {
         "broadcast",
         { event: BUZZER_EVENTS.ROUND_STEAL },
         ({ payload }: { payload: RoundStealPayload }) => {
+          console.log("[useRoundState] Realtime: ROUND_STEAL", payload);
           setState((prev) => ({
             ...prev,
             status: "steal_active",
@@ -162,6 +167,7 @@ export function useRoundState(): UseRoundStateResult {
         "broadcast",
         { event: BUZZER_EVENTS.ROUND_RESOLVED },
         ({ payload }: { payload: RoundResolvedPayload }) => {
+          console.log("[useRoundState] Realtime: ROUND_RESOLVED", payload);
           setState((prev) => ({
             ...prev,
             status: "resolved",
@@ -173,7 +179,8 @@ export function useRoundState(): UseRoundStateResult {
       .on(
         "broadcast",
         { event: BUZZER_EVENTS.ROUND_ABORTED },
-        (/* payload: RoundAbortedPayload */) => {
+        (payload) => {
+          console.log("[useRoundState] Realtime: ROUND_ABORTED", payload);
           setState((prev) => ({
             ...prev,
             status: "aborted",
@@ -181,12 +188,20 @@ export function useRoundState(): UseRoundStateResult {
             first_buzz_table_name: null,
           }));
         },
-      )
-      .subscribe();
+      );
+
+    channel.subscribe((status) => {
+      console.log(`[useRoundState] ${CHANNELS.BUZZER_ROOM} subscription status: ${status}`);
+      if (status === "SUBSCRIBED") {
+        // Only hydrate after we are sure we are listening for updates, 
+        // to avoid missing an update between hydrate and subscribe.
+        void hydrate();
+      }
+    });
 
     return () => {
       cancelledRef.current = true;
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [hydrate]);
 

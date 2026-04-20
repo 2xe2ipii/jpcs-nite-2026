@@ -27,6 +27,7 @@ export async function broadcast(
           topic: channel,
           event,
           payload,
+          type: "broadcast",
           private: false,
         },
       ],
