@@ -150,7 +150,7 @@ function ShuffleButton() {
       const res = await fetch("/api/tables/randomize-zero", { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setStatus("done");
-      setTimeout(() => setStatus("idle"), 3000);
+      setTimeout(() => window.location.reload(), 800);
     } catch {
       setStatus("error");
       setTimeout(() => setStatus("idle"), 3000);
