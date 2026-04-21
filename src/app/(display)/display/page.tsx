@@ -185,19 +185,15 @@ function ScoreList({ scores }: { scores: TableScoreResponse[] }) {
 }
 
 function ScoreRow({ table, rank }: { table: TableScoreResponse; rank: number }) {
-  const isTop3 = rank <= 3;
   const starCount = Math.max(0, table.current_score);
+  const displayName = table.display_name.replace(/(\d+)/, (m) => String(parseInt(m, 10)));
 
   return (
-    <div
-      className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-500 ${
-        isTop3 ? "bg-gold/[0.06] border-gold/20" : "bg-white/[0.02] border-white/[0.04]"
-      }`}
-    >
+    <div className="flex items-center gap-3 px-4 py-2 rounded-xl border bg-white/[0.02] border-white/[0.04] transition-all duration-500">
       {/* Rank */}
       <div className="w-7 flex-shrink-0 flex items-center justify-center">
         <span
-          className={`font-bold tabular-nums leading-none ${isTop3 ? "text-gold text-lg" : "text-white/35 text-base"}`}
+          className="font-bold tabular-nums leading-none text-white/35 text-base"
           style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
         >
           {rank}
@@ -206,16 +202,16 @@ function ScoreRow({ table, rank }: { table: TableScoreResponse; rank: number }) 
 
       {/* Table name */}
       <span
-        className={`font-bold text-lg flex-shrink-0 w-24 ${isTop3 ? "text-gold" : "text-white/70"}`}
+        className="font-bold text-lg flex-shrink-0 w-24 text-white/70"
         style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
       >
-        {table.display_name}
+        {displayName}
       </span>
 
       {/* Stars */}
       <div className="flex flex-wrap gap-0.5 flex-1">
         {Array.from({ length: starCount }).map((_, i) => (
-          <span key={i} className={`text-sm leading-none ${isTop3 ? "text-gold" : "text-gold/50"}`}>★</span>
+          <span key={i} className="text-sm leading-none text-gold/70">★</span>
         ))}
       </div>
     </div>
