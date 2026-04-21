@@ -56,20 +56,8 @@ export function useTableScores(): UseTableScoresResult {
         { event: SCORE_EVENTS.SCORE_UPDATED },
         ({ payload }: { payload: ScoreUpdatedPayload }) => {
           console.log("[useTableScores] Realtime: SCORE_UPDATED", payload);
-          setScores((prev) => {
-            const next = prev.map((t) =>
-              t.id === payload.table_id
-                ? { ...t, current_score: payload.new_total }
-                : t,
-            );
-            // Re-sort by score desc, table_number asc.
-            next.sort(
-              (a, b) =>
-                b.current_score - a.current_score ||
-                a.table_number - b.table_number,
-            );
-            return next;
-          });
+          // Refetch so server-side sort (score, first_scored_at, tiebreak_order) is authoritative.
+          void fetchScores();
         },
       );
 

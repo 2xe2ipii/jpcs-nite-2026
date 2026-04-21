@@ -218,6 +218,7 @@ export type Database = {
           id: string
           is_active: boolean
           table_number: number
+          tiebreak_order: number | null
         }
         Insert: {
           created_at?: string
@@ -225,6 +226,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           table_number: number
+          tiebreak_order?: number | null
         }
         Update: {
           created_at?: string
@@ -232,6 +234,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           table_number?: number
+          tiebreak_order?: number | null
         }
         Relationships: []
       }
@@ -241,9 +244,11 @@ export type Database = {
         Row: {
           current_score: number | null
           display_name: string | null
+          first_scored_at: string | null
           id: string | null
           is_active: boolean | null
           table_number: number | null
+          tiebreak_order: number | null
         }
         Relationships: []
       }

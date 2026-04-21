@@ -20,6 +20,8 @@ export async function GET() {
     .from("table_scores")
     .select("id, display_name, table_number, is_active, current_score")
     .order("current_score", { ascending: false })
+    .order("first_scored_at", { ascending: true, nullsFirst: false })
+    .order("tiebreak_order", { ascending: true, nullsFirst: false })
     .order("table_number", { ascending: true });
 
   if (error) {
