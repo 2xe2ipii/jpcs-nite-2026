@@ -211,7 +211,7 @@ function ScoreRow({ table, rank }: { table: TableScoreResponse; rank: number }) 
       {/* Stars */}
       <div className="flex flex-wrap gap-0.5 flex-1">
         {Array.from({ length: starCount }).map((_, i) => (
-          <span key={i} className="text-sm leading-none text-gold/70">★</span>
+          <span key={i} className="text-2xl leading-none text-gold/70">★</span>
         ))}
       </div>
     </div>
