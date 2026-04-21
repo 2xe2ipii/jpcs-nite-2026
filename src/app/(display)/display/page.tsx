@@ -167,14 +167,14 @@ function ScoreList({ scores }: { scores: TableScoreResponse[] }) {
   const right = scores.slice(10, 20);
 
   return (
-    <div className="flex-1 overflow-y-auto px-10 pb-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex gap-6 min-h-full content-center py-2">
-        <div className="flex-1 flex flex-col gap-2">
+    <div className="flex-1 overflow-hidden px-10 pb-8">
+      <div className="flex gap-6 h-full">
+        <div className="flex-1 flex flex-col justify-evenly">
           {left.map((table, i) => (
             <ScoreRow key={table.id} table={table} rank={i + 1} />
           ))}
         </div>
-        <div className="flex-1 flex flex-col gap-2">
+        <div className="flex-1 flex flex-col justify-evenly">
           {right.map((table, i) => (
             <ScoreRow key={table.id} table={table} rank={i + 11} />
           ))}
@@ -184,38 +184,36 @@ function ScoreList({ scores }: { scores: TableScoreResponse[] }) {
   );
 }
 
-const MEDALS = ["🥇", "🥈", "🥉"];
-
 function ScoreRow({ table, rank }: { table: TableScoreResponse; rank: number }) {
   const isTop3 = rank <= 3;
-  const medal = MEDALS[rank - 1];
   const starCount = Math.max(0, table.current_score);
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-2.5 rounded-xl border transition-all duration-500 ${
+      className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-500 ${
         isTop3 ? "bg-gold/[0.06] border-gold/20" : "bg-white/[0.02] border-white/[0.04]"
       }`}
     >
-      {/* Medal / rank */}
-      <div className="w-7 flex-shrink-0 flex items-center justify-center pt-0.5">
-        {medal ? (
-          <span className="text-lg leading-none">{medal}</span>
-        ) : (
-          <span className="font-sans text-white/25 text-sm font-medium tabular-nums">{rank}</span>
-        )}
+      {/* Rank */}
+      <div className="w-7 flex-shrink-0 flex items-center justify-center">
+        <span
+          className={`font-bold tabular-nums leading-none ${isTop3 ? "text-gold text-lg" : "text-white/35 text-base"}`}
+          style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
+        >
+          {rank}
+        </span>
       </div>
 
       {/* Table name */}
       <span
-        className={`font-bold text-sm flex-shrink-0 w-16 pt-0.5 ${isTop3 ? "text-gold" : "text-white/55"}`}
-        style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif', fontVariant: "small-caps" }}
+        className={`font-bold text-lg flex-shrink-0 w-24 ${isTop3 ? "text-gold" : "text-white/70"}`}
+        style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
       >
-        {table.display_name.replace(/(\d+)/, (m) => String(parseInt(m, 10)))}
+        {table.display_name}
       </span>
 
       {/* Stars */}
-      <div className="flex flex-wrap gap-0.5 flex-1 pt-0.5">
+      <div className="flex flex-wrap gap-0.5 flex-1">
         {Array.from({ length: starCount }).map((_, i) => (
           <span key={i} className={`text-sm leading-none ${isTop3 ? "text-gold" : "text-gold/50"}`}>★</span>
         ))}
@@ -241,11 +239,26 @@ function BuzzerCircle({ round }: { round: DisplayRound }) {
         <GoldParticleBurst key={round.first_buzz_table_name ?? "buzz"} />
       )}
 
-      {/* Ring — pulses independently; does NOT wrap content so scale won't move text */}
-      <div
-        className={`absolute inset-0 rounded-full border transition-all duration-500 ${ringColor}`}
-        style={ringPulse ? { animation: "ring-pulse 2.4s ease-in-out infinite" } : undefined}
-      />
+      {/* Static ring */}
+      <div className={`absolute inset-0 rounded-full border ${ringColor}`} />
+
+      {/* Orbiting gold bead — replaces pulse when buzzer is open */}
+      {ringPulse && (
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{ animation: "orbit-spin 3s linear infinite" }}
+        >
+          <div
+            className="absolute w-3 h-3 rounded-full bg-gold"
+            style={{
+              top: -6,
+              left: "50%",
+              transform: "translateX(-50%)",
+              boxShadow: "0 0 10px 4px rgba(201,168,76,0.8), 0 0 24px 8px rgba(201,168,76,0.3)",
+            }}
+          />
+        </div>
+      )}
 
       {/* Content — centered inside the same 500px box, z above ring */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-14 z-10">
