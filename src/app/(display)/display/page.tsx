@@ -121,7 +121,6 @@ export default function DisplayPage() {
       >
         <ScoreboardHeader />
         <ScoreList scores={activeScores} />
-        <ShuffleButton />
       </div>
 
       {/* Buzzer overlay */}
@@ -159,24 +158,28 @@ function ShuffleButton() {
   };
 
   return (
-    <div className="flex justify-center pb-4">
-      <button
-        type="button"
-        onClick={() => void handleShuffle()}
-        disabled={status === "loading"}
-        className="flex items-center gap-2 rounded-full border border-gold/20 bg-white/[0.04] px-5 py-2 text-sm text-white/50 transition-all hover:border-gold/40 hover:text-white/80 disabled:opacity-40"
-        style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
-      >
-        <Shuffle className={`h-3.5 w-3.5 ${status === "loading" ? "animate-spin" : ""}`} />
-        {status === "loading" ? "Shuffling…" : status === "done" ? "Shuffled!" : status === "error" ? "Failed" : "Shuffle zero-score tables"}
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={() => void handleShuffle()}
+      disabled={status === "loading"}
+      aria-label="Shuffle zero-score tables"
+      className={`rounded-full border p-2 transition-all ${
+        status === "done" ? "border-emerald-500/50 text-emerald-400" :
+        status === "error" ? "border-red-500/50 text-red-400" :
+        "border-white/10 text-white/30 hover:border-gold/30 hover:text-white/60"
+      } disabled:opacity-40`}
+    >
+      <Shuffle className={`h-4 w-4 ${status === "loading" ? "animate-spin" : ""}`} />
+    </button>
   );
 }
 
 function ScoreboardHeader() {
   return (
-    <header className="flex-shrink-0 pt-10 pb-4 text-center">
+    <header className="flex-shrink-0 pt-10 pb-4 text-center relative">
+      <div className="absolute top-10 right-10">
+        <ShuffleButton />
+      </div>
       <p className="text-gold/50 text-[0.7rem] tracking-[0.4em] uppercase" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
         JPCS NITE 2026 · NIGHTSKY OF GOLDEN DREAMS
       </p>
