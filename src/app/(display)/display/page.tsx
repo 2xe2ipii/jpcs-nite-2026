@@ -155,8 +155,6 @@ function ScoreboardHeader() {
 }
 
 function ScoreList({ scores }: { scores: TableScoreResponse[] }) {
-  const maxScore = Math.max(...scores.map((s) => s.current_score), 1);
-
   if (scores.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -165,12 +163,22 @@ function ScoreList({ scores }: { scores: TableScoreResponse[] }) {
     );
   }
 
+  const left = scores.slice(0, 10);
+  const right = scores.slice(10, 20);
+
   return (
-    <div className="flex-1 overflow-y-auto px-10 pb-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex flex-col gap-2.5 min-h-full justify-center py-2">
-        {scores.map((table, i) => (
-          <ScoreRow key={table.id} table={table} rank={i + 1} maxScore={maxScore} />
-        ))}
+    <div className="flex-1 overflow-y-auto px-10 pb-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-6 min-h-full content-center py-2">
+        <div className="flex-1 flex flex-col gap-2">
+          {left.map((table, i) => (
+            <ScoreRow key={table.id} table={table} rank={i + 1} />
+          ))}
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          {right.map((table, i) => (
+            <ScoreRow key={table.id} table={table} rank={i + 11} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -178,64 +186,40 @@ function ScoreList({ scores }: { scores: TableScoreResponse[] }) {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-function ScoreRow({
-  table,
-  rank,
-  maxScore,
-}: {
-  table: TableScoreResponse;
-  rank: number;
-  maxScore: number;
-}) {
+function ScoreRow({ table, rank }: { table: TableScoreResponse; rank: number }) {
   const isTop3 = rank <= 3;
-  const barWidth = maxScore > 0 ? (table.current_score / maxScore) * 100 : 0;
   const medal = MEDALS[rank - 1];
+  const starCount = Math.max(0, table.current_score);
 
   return (
     <div
-      className={`flex items-center gap-4 px-5 py-3.5 rounded-xl border transition-all duration-500 ${
-        isTop3
-          ? "bg-gold/[0.06] border-gold/20"
-          : "bg-white/[0.02] border-white/[0.04]"
+      className={`flex items-start gap-3 px-4 py-2.5 rounded-xl border transition-all duration-500 ${
+        isTop3 ? "bg-gold/[0.06] border-gold/20" : "bg-white/[0.02] border-white/[0.04]"
       }`}
     >
       {/* Medal / rank */}
-      <div className="w-9 flex-shrink-0 flex items-center justify-center">
+      <div className="w-7 flex-shrink-0 flex items-center justify-center pt-0.5">
         {medal ? (
-          <span className="text-2xl leading-none">{medal}</span>
+          <span className="text-lg leading-none">{medal}</span>
         ) : (
-          <span className="font-sans text-white/25 text-base font-medium tabular-nums">{rank}</span>
+          <span className="font-sans text-white/25 text-sm font-medium tabular-nums">{rank}</span>
         )}
       </div>
 
       {/* Table name */}
       <span
-        className={`font-bold text-xl flex-shrink-0 w-28 ${
-          isTop3 ? "text-gold" : "text-white/55"
-        }`}
+        className={`font-bold text-sm flex-shrink-0 w-16 pt-0.5 ${isTop3 ? "text-gold" : "text-white/55"}`}
         style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif', fontVariant: "small-caps" }}
       >
         {table.display_name.replace(/(\d+)/, (m) => String(parseInt(m, 10)))}
       </span>
 
-      {/* Progress bar */}
-      <div className="flex-1 mx-1">
-        <div className="h-2.5 rounded-full bg-white/[0.05] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gold transition-all duration-700 ease-out"
-            style={{ width: `${barWidth}%`, boxShadow: '0 0 8px 2px rgba(201,168,76,0.6), 0 0 20px 4px rgba(201,168,76,0.25)' }}
-          />
-        </div>
+      {/* Stars */}
+      <div className="flex flex-wrap gap-0.5 flex-1 pt-0.5">
+        {Array.from({ length: starCount }).map((_, i) => (
+          <span key={i} className={`text-sm leading-none ${isTop3 ? "text-gold" : "text-gold/50"}`}>★</span>
+        ))}
       </div>
-
-      {/* Score */}
-      <span
-        className={`font-script font-bold text-2xl tabular-nums flex-shrink-0 w-16 text-right ${
-          isTop3 ? "text-gold" : "text-white/35"
-        }`}
-      >
-        {table.current_score}
-      </span>
     </div>
   );
 }
