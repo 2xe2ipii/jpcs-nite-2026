@@ -177,7 +177,7 @@ function ShuffleButton() {
 function ScoreboardHeader() {
   return (
     <header className="flex-shrink-0 pt-10 pb-4 text-center relative">
-      <div className="absolute top-10 right-10">
+      <div className="absolute top-10 left-10">
         <ShuffleButton />
       </div>
       <p className="text-gold/50 text-[0.7rem] tracking-[0.4em] uppercase" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
