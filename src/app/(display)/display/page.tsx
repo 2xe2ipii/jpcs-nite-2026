@@ -317,10 +317,10 @@ function BuzzerCircleContent({ round }: { round: DisplayRound }) {
             className="font-script text-gold font-medium leading-none uppercase whitespace-nowrap"
             style={{ fontSize: "clamp(3rem, 7vw, 5.5rem)" }}
           >
-            {round.first_buzz_table_name ?? "—"}
+            {round.first_buzz_table_name?.replace(/(\d+)/, (m) => String(parseInt(m, 10))) ?? "—"}
           </h2>
           <p className="text-white/60 text-xl mt-4" style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}>
-            BUZZED FIRST!
+            BUZZED FIRST
           </p>
         </>
       );
