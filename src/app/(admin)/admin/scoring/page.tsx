@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Shuffle } from "lucide-react";
 import { useTableScores } from "@/lib/hooks/use-table-scores";
 // Teammate: you'll need these imports for the full implementation:
 // import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -34,51 +32,6 @@ import { useTableScores } from "@/lib/hooks/use-table-scores";
  * (API calls, error handling, ConfirmButton usage, layout conventions).
  */
 
-function RandomizeZeroTables() {
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [count, setCount] = useState<number | null>(null);
-
-  const handleRandomize = async () => {
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/tables/randomize-zero", { method: "POST" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json() as { updated: number };
-      setCount(data.updated);
-      setStatus("done");
-    } catch {
-      setStatus("error");
-    }
-  };
-
-  return (
-    <div className="rounded-lg border border-night-line bg-night-soft p-5 flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-white">Randomize zero-score table order</p>
-        <p className="text-xs text-white/45 mt-0.5">
-          Shuffles the food queue position for all tables that scored 0 stars.
-          Tables with stars keep their earned order.
-        </p>
-        {status === "done" && count !== null && (
-          <p className="text-xs text-emerald-400 mt-1">{count} table{count !== 1 ? "s" : ""} randomized.</p>
-        )}
-        {status === "error" && (
-          <p className="text-xs text-red-400 mt-1">Failed — try again.</p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => void handleRandomize()}
-        disabled={status === "loading"}
-        className="flex items-center gap-2 rounded border border-surface-3 bg-surface-1 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-surface-2 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 flex-shrink-0"
-      >
-        <Shuffle className={`h-4 w-4 ${status === "loading" ? "animate-spin" : ""}`} />
-        {status === "loading" ? "Shuffling…" : "Shuffle"}
-      </button>
-    </div>
-  );
-}
-
 export default function ScoringPage() {
   const { scores, loading, error } = useTableScores();
 
@@ -87,8 +40,6 @@ export default function ScoringPage() {
       <div>
         <h2 className="text-2xl font-semibold text-white">Scoring</h2>
       </div>
-
-      <RandomizeZeroTables />
 
       <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
         <strong>Task assigned</strong> — See{" "}

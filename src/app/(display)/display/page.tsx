@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Shuffle } from "lucide-react";
 import { useRoundState, type RoundState } from "@/lib/hooks/use-round-state";
 import { useTableScores } from "@/lib/hooks/use-table-scores";
 import type { TableScoreResponse } from "@/lib/types/realtime";
@@ -120,6 +121,7 @@ export default function DisplayPage() {
       >
         <ScoreboardHeader />
         <ScoreList scores={activeScores} />
+        <ShuffleButton />
       </div>
 
       {/* Buzzer overlay */}
@@ -139,6 +141,38 @@ export default function DisplayPage() {
 // ---------------------------------------------------------------------------
 // Scoreboard
 // ---------------------------------------------------------------------------
+
+function ShuffleButton() {
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  const handleShuffle = async () => {
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/tables/randomize-zero", { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setStatus("done");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  };
+
+  return (
+    <div className="flex justify-center pb-4">
+      <button
+        type="button"
+        onClick={() => void handleShuffle()}
+        disabled={status === "loading"}
+        className="flex items-center gap-2 rounded-full border border-gold/20 bg-white/[0.04] px-5 py-2 text-sm text-white/50 transition-all hover:border-gold/40 hover:text-white/80 disabled:opacity-40"
+        style={{ fontFamily: 'var(--font-cinzel), Cinzel, serif' }}
+      >
+        <Shuffle className={`h-3.5 w-3.5 ${status === "loading" ? "animate-spin" : ""}`} />
+        {status === "loading" ? "Shuffling…" : status === "done" ? "Shuffled!" : status === "error" ? "Failed" : "Shuffle zero-score tables"}
+      </button>
+    </div>
+  );
+}
 
 function ScoreboardHeader() {
   return (
